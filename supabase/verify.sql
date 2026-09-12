@@ -107,6 +107,50 @@ order by p.proname;
 
 
 -- ---------------------------------------------------------------------------
+-- 7b. Every function must pin search_path.
+-- EXPECT: zero rows. A mutable search_path means unqualified names inside the
+-- function resolve against whatever the caller's path is, and it is one of the
+-- first things `supabase db advisors` reports.
+-- ---------------------------------------------------------------------------
+select p.proname as function_missing_search_path
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.prokind = 'f'
+  and not exists (
+    select 1
+    from unnest(coalesce(p.proconfig, array[]::text[])) as cfg
+    where cfg like 'search_path=%'
+  )
+order by p.proname;
+
+
+-- ---------------------------------------------------------------------------
+-- 7c. Every foreign key column should have an index.
+-- EXPECT: zero rows. Postgres does not index FK columns automatically, so an
+-- unindexed one turns every ON DELETE CASCADE / SET NULL into a scan of the
+-- child table.
+-- ---------------------------------------------------------------------------
+select
+  con.conrelid::regclass::text as table_name,
+  a.attname                    as unindexed_fk_column,
+  con.conname                  as constraint_name
+from pg_constraint con
+join pg_attribute a
+  on a.attrelid = con.conrelid
+ and a.attnum = any (con.conkey)
+where con.contype = 'f'
+  and con.connamespace = 'public'::regnamespace
+  and not exists (
+    select 1
+    from pg_index i
+    where i.indrelid = con.conrelid
+      and a.attnum = any (i.indkey)
+  )
+order by table_name, unindexed_fk_column;
+
+
+-- ---------------------------------------------------------------------------
 -- 8. Foreign key inventory, to confirm the composite (same-school) constraints
 --    were created and that none of them uses SET NULL.
 -- EXPECT: among others, subjects_class_fkey, students_class_fkey,
