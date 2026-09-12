@@ -23,6 +23,9 @@ supabase/
   migrations/
     20260101000000_initial_schema.sql   tables, constraints, indexes, trigger, view
     20260101000100_rls_policies.sql     RLS enablement, policies, grants
+  tests/
+    rls_test.sql                        row level security test suite - run this
+  verify.sql                            post-install structural checks (read-only)
 web/                                    the new Next.js application
   src/app/                              routes (App Router)
   src/components/                       UI, split server / "use client"
@@ -59,6 +62,15 @@ supabase login
 supabase link --project-ref <your-project-ref>
 supabase db push
 ```
+
+**Then confirm it worked.** Both files are safe to run against a live project:
+
+- `supabase/verify.sql` — read-only. Checks the install is structurally correct:
+  RLS on every table, grants, no `SECURITY DEFINER`, every function pinning
+  `search_path`, every foreign key indexed.
+- `supabase/tests/rls_test.sql` — one transaction ending in `ROLLBACK`. Seeds two
+  schools and impersonates an admin, a teacher and a student in each to prove the
+  policies actually restrict access, then reports PASS/FAIL per probe.
 
 ### 3. Configure the app
 
@@ -312,11 +324,12 @@ database. Being explicit about the gap:
 
 | Check | Command | Result |
 | --- | --- | --- |
-| SQL syntax of both migrations | `pgsql-parser` (libpg_query) on each file | 49 and 66 statements parse cleanly |
+| SQL syntax of all four SQL files | `pgsql-parser` (libpg_query) | schema 53 statements, RLS 66, `tests/rls_test.sql` 62, `verify.sql` 9 — all parse cleanly |
 | Every table has RLS enabled | compared `create table` against `alter table ... enable row level security` | 10 tables, 1:1 match |
-| `verify.sql` post-install checks | same parser | 9 statements parse cleanly |
+| Every foreign key column is indexed | reviewed `create index` output against the constraint list | full coverage, no gaps |
+| Every function pins `search_path` | reviewed `create or replace function` output | all 6 pinned |
 | TypeScript | `cd web && npm run typecheck` | exit 0 |
-| Production build | `cd web && npm run build` | exit 0, 47 routes compiled |
+| Production build | `cd web && npm run build` | exit 0, 46 routes compiled (45 page files plus the generated not-found route) |
 | Server boots and routes resolve | `next start -p 3100`, HTTP requests per route | see below |
 | Public pages server-render | fetched `/` and `/login/student` | landing page and student form render; setup banner present; Emotion styles present in `<head>`, confirming the MUI SSR cache is wired |
 
@@ -329,8 +342,9 @@ Route behaviour with no Supabase credentials configured (the deliberate
 | `/admin/dashboard`, `/teacher/dashboard`, `/student/dashboard`, `/admin/students` | `307` → `/` |
 | `/nonexistent-page` | `404` |
 
-Two defects were found and fixed during this review, both of which would have
-been caught only by a live database or a careful reading:
+**Defects found and fixed during review.** None of these were caught by the
+build or the typechecker; each needed a careful reading of the schema, the build
+output, or the code.
 
 1. **A composite foreign key with `ON DELETE SET NULL`** on
    `subjects.teacher_id`. A composite FK nulls *every* referencing column, and
@@ -342,6 +356,24 @@ been caught only by a live database or a careful reading:
    into the admin, teacher and student segments, permanently breaking them once
    deployed with credentials. The three role layouts now set
    `export const dynamic = "force-dynamic"`.
+3. **The subject roster page issued two queries per student** — 80 concurrent
+   requests to PostgREST for a 40-student class. `getSubjectRoster()` now does
+   it in three queries regardless of class size.
+4. **Four foreign key columns had no index**, including
+   `attendance.class_id`, so every class deletion scanned the attendance table.
+   All four are now indexed.
+5. **All six functions had a mutable `search_path`**, which
+   `supabase db advisors` would have reported on the first live run.
+
+**About the test suite.** `supabase/tests/rls_test.sql` (50 probes: 4 structural
+checks, 41 access assertions, 5 attempts at a forbidden write, and 3 positive
+controls) was written during this review and is the tool for closing the gap
+below — it is not evidence that the gap is already closed. Two bugs in it were
+found and fixed before delivery: a data-modifying CTE whose count could not see
+its own insert (a data-modifying CTE shares the surrounding statement's
+snapshot, so the probe would have reported a false failure), and a teacher write
+probe placed ahead of the student read probes, which changed the counts those
+probes assert. Both are noted in the file. **It has never been executed.**
 
 **Not verified — the remaining risk**
 
@@ -351,16 +383,25 @@ been caught only by a live database or a careful reading:
 - **No RLS policy has been exercised.** Nothing has confirmed that a teacher
   sees only their own classes, or that a student cannot read another student's
   row. `supabase/verify.sql` checks that the policies *exist and are shaped
-  correctly* (including that every UPDATE policy has a `WITH CHECK`), but only a
-  real query proves they work.
+  correctly* (including that every UPDATE policy has a `WITH CHECK`), and
+  `supabase/tests/rls_test.sql` asserts the behaviour — but neither has been run.
 - No sign-in, sign-up or CRUD flow has been run end to end against Supabase.
 - No page has been visually reviewed in a browser.
 
-Suggested first session against a live project: apply the migrations, run
-`supabase/verify.sql`, register a school, add one class, one subject, one
-teacher and two students, then sign in as each role and confirm the teacher
-sees only their class and a student sees only themselves. That single pass
-exercises nearly every policy in the schema.
+Suggested first session against a live project, in this order:
+
+1. Apply the two migrations.
+2. Run `supabase/verify.sql`. Every query should return no rows except the
+   inventories (2, 4, 8, 9), which list what was installed.
+3. Run `supabase/tests/rls_test.sql` and check for `FAIL` rows. This is the step
+   that converts the security model from asserted to proven. It is a single
+   transaction ending in `ROLLBACK`, so it is safe to run against a live
+   database even with real data in it.
+4. Run `supabase db advisors` and confirm nothing unexpected remains.
+5. `cd web && npm run db:types` to replace the hand-written types.
+6. Register a school, add one class, one subject, one teacher and two students,
+   then sign in as each role and confirm the teacher sees only their class and a
+   student sees only themselves.
 
 
 ## Cutting over
