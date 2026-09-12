@@ -199,12 +199,36 @@ in `20260101000100_rls_policies.sql`.
   self-update policy pins `role` and `school_id` to the caller's JWT.
 - **`auth.role()` was not used**; policies use the `TO authenticated` clause
   instead, which does not silently pass when anonymous sign-ins are enabled.
-- **No `SECURITY DEFINER` functions.** The helper functions are
-  `SECURITY INVOKER` and read only the caller's own JWT, so there is no
-  privilege-escalation surface.
-- **RLS is enabled but not `FORCE`d**, so the Dashboard SQL editor can still
-  read tables. `service_role` bypasses RLS via its `BYPASSRLS` attribute
-  regardless.
+- **No `SECURITY DEFINER` functions.** Every helper is `SECURITY INVOKER` and
+  reads only the caller's own JWT, so there is no privilege-escalation surface.
+  `security invoker` is stated explicitly rather than relying on the default, so
+  it cannot be flipped by accident.
+- **Every function pins `set search_path = ''`.** Without it, unqualified names
+  inside a function resolve against the *caller's* search path, so a caller able
+  to create objects could shadow something the function depends on. Pinning it
+  also clears the `function_search_path_mutable` warnings
+  `supabase db advisors` raises for every function in `public`.
+- **RLS predicates wrap helpers in `(select ...)`.** `(select auth.uid())` is
+  evaluated once per query as an InitPlan rather than once per row, which on a
+  large table is the difference between a scan and an index lookup. Every policy
+  here is written that way.
+- **Every foreign key column is indexed.** Postgres does not index FK columns
+  automatically, and an unindexed one turns each `ON DELETE CASCADE` /
+  `SET NULL` into a scan of the child table. `attendance.class_id`,
+  `attendance.recorded_by`, `notices.created_by` and `schools.created_by` exist
+  for that reason; `supabase/verify.sql` query 7c checks the whole schema for
+  regressions.
+- **RLS is enabled but not `FORCE`d.** This is a deliberate deviation from
+  Supabase's own guidance, which recommends `FORCE`. `FORCE` also subjects the
+  table *owner* to the policies, and the Dashboard SQL editor and the migration
+  runner connect as `postgres` — the owner. With `FORCE`, `select * from
+  students` in the SQL editor returns zero rows (there is no JWT, so
+  `jwt_school_id()` is null), and `supabase/tests/rls_test.sql` could not seed
+  its fixtures. What `FORCE` protects against is the owner role, which can drop
+  the policies outright anyway, so the security benefit is negligible while the
+  operational cost is real. `anon` and `authenticated` — the roles that reach
+  the database through the Data API — are fully covered by `ENABLE`.
+  `service_role` bypasses RLS either way via its `BYPASSRLS` attribute.
 
 ## Authentication flows
 
