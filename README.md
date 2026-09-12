@@ -2,6 +2,21 @@
     SCHOOL MANAGEMENT SYSTEM
 </h1>
 
+> **Note — this project has been migrated.**
+>
+> The original MERN implementation (Create React App + Express + MongoDB) in
+> `frontend/` and `backend/` has been superseded by **`web/`, a Next.js 16
+> application backed by Supabase** (Postgres, Auth and Row Level Security).
+>
+> - To run the new app, start with **[`web/README.md`](web/README.md)**.
+> - For the database schema, the security model, the collection-to-table
+>   mapping and the deployment steps, see **[`MIGRATION.md`](MIGRATION.md)**.
+> - `frontend/` and `backend/` are retained for reference only and are no
+>   longer maintained. The sections below describe that legacy stack.
+>
+> `MIGRATION.md` documents how to remove the legacy folders once you are
+> satisfied with the new app.
+
 <h3 align="center">
 Streamline school management, class organization, and add students and faculty.<br>
 Seamlessly track attendance, assess performance, and provide feedback. <br>
