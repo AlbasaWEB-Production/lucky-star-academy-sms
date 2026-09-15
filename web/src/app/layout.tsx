@@ -1,8 +1,33 @@
 import type { Metadata } from "next";
+import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 
 import Providers from "./providers";
 import "./globals.css";
+
+/**
+ * The school's two typefaces, loaded once and self-hosted at build (no browser
+ * requests to Google). Fraunces is the display/identity serif; Hanken Grotesk
+ * carries the body and labels. Each exposes a CSS variable consumed by the MUI
+ * theme, so a single class on <html> switches the whole app.
+ *
+ * Fraunces is a variable font. SOFT is turned up for a warmer, more "printed"
+ * serif; WONK stays off so the letterforms stay steady and legible.
+ */
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["SOFT", "WONK"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: "variable",
+  variable: "--font-hanken",
+  display: "swap",
+});
 
 /**
  * The `v16-appRouter` import path is matched to this project's Next.js major
@@ -28,7 +53,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${fraunces.variable} ${hanken.variable}`}>
       <body>
         <AppRouterCacheProvider>
           <Providers>{children}</Providers>
