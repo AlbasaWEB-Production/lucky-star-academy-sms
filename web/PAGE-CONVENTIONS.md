@@ -106,9 +106,10 @@ so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
 
 | Component | Purpose |
 | --- | --- |
-| `PageHeader` | `{ title, subtitle?, action? }` |
-| `StatCard` | `{ label, value, hint?, icon?, accent? }` |
-| `TableShell` | `{ headers: string[], children, isEmpty, emptyMessage? }` — children must be `TableRow`s |
+| `PageHeader` | `{ title, subtitle?, action? }` — title in Fraunces, ink-green, optional action right-aligned |
+| `StatCard` | `{ label, value, hint?, icon?, tone?, primary? }` — metric tile; `tone` picks a semantic accent, `primary` makes one filled-green focal tile |
+| `TableShell` | `{ headers, children, isEmpty, emptyMessage?, density?, minWidth?, columnAlign? }` — `density` ("compact" \| "comfortable"), `columnAlign` per-column `"left" \| "right"`, children must be `TableRow`s |
+| `NoticeCard` | `{ notice }` — date-rail reading card for notice lists (Decision 5) |
 | `EmptyState` | `{ title, description?, action? }` |
 | `ConfirmActionButton` | `{ action, fields: Record<string,string>, label, confirmTitle, confirmMessage, color?, variant?, size? }` — confirmation dialog + error reporting |
 | `@/components/auth/PasswordField` | `TextField` with a show/hide toggle |
@@ -119,6 +120,22 @@ so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
 `TableShell` takes `isEmpty` explicitly — do not rely on it inferring
 emptiness from `children`, because `[].length === 0` still renders a truthy
 array.
+
+`TableShell` also takes `density` and `columnAlign`:
+- **`density`** — `"compact"` for staff-facing data tables (admin/teacher),
+  `"comfortable"` (the default) for pupil-facing surfaces. Compact tables use
+  `size="small"` rows.
+- **`columnAlign`** — an array indexed to `headers`. Numeric columns (counts,
+  marks, percentages) go `"right"`; names and labels stay `"left"`. The page
+  must set the matching `align` on its own body cells, and give numeric cells
+  `fontVariantNumeric: "tabular-nums"` so the digits line up.
+- **`minWidth`** — keep it small (≈640) for pupil-facing tables, wider for
+  staff rosters.
+
+Chart cards on dashboards and detail pages are wrapped as a "panel with a
+caption": an overline category label (e.g. `Overview`, `Performance`) above an
+h6 title. Follow the existing chart cards' structure rather than inventing a
+new one.
 
 ## Next.js 16 gotchas
 
@@ -142,12 +159,33 @@ array.
 
 - Pages return a fragment starting with `<PageHeader />`.
 - Content width is handled by the shell; wrap grids in `Box`.
-- Palette: `primary.main` `#7f56da`, `secondary.main` `#270843`. Use theme
-  tokens (`color="text.secondary"`, `sx={{ color: 'primary.main' }}`) rather
-  than hard-coded colours, except inside chart series.
+- Palette is tokenised in `src/theme.ts`:
+  - `primary.main` `#147B45` (crest green) — the single working colour: buttons,
+    active sidebar item, selected chips, table-header tint.
+  - `secondary.main` `#083E28` — deep green, used as ink for headings and for
+    button text on white. It must stay dark enough to read.
+  - `BRAND_GOLD` `#F2B705` — crest gold. **Never text on white** (≈1.9:1). Use
+    as a fill, rule or watermark with dark text over it.
+  - `PAGE_BG` `#F7F7F5`, `INK` `#1A1A1A`, `INK_MUTED` `#6B6B6B`.
+  - `DISPLAY_FONT` = `var(--font-fraunces)`, `TEXT_FONT` = `var(--font-hanken)`.
+    Fraunces for the hero, page titles, section headings and big numbers;
+    Hanken for body, labels, table text and buttons.
+- Use theme tokens (`color="text.secondary"`, `sx={{ color: 'primary.main' }}`)
+  rather than hard-coded colours, except inside chart series.
+- Typefaces come from CSS variables set on `<html>` in `layout.tsx`; reference
+  them via `DISPLAY_FONT` / `TEXT_FONT`, never a font-family string.
+- Radius scale is fixed by meaning: pill (buttons/chips) = 999, inputs = 12,
+  metric/list tiles = 14, role/notice/photo cards = 20, auth card + dialogs = 24.
+  Prefer these over arbitrary `sx` radii.
 - Every table needs an `emptyMessage` that says what to do next.
 - Dates come back from Postgres as `YYYY-MM-DD` strings; render them with
   `new Date(value).toLocaleDateString()`.
+- Data tables for staff are `density="compact"` with right-aligned numeric
+  columns; pupil-facing tables stay roomier. See the `TableShell` notes above.
+- `NextLink` accepts only `style` (as an anchor attribute), not `sx` — use
+  `style={{ color: BRAND_GREEN, fontWeight: 600 }}` for a styled link.
+- A page must work at 360px: grids collapse to a single column (`gridTemplateColumns:
+  { xs: '1fr', sm: '1fr 1fr' }`), and no element forces horizontal page scroll.
 
 ## Form pattern
 
@@ -155,7 +193,7 @@ array.
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, TextField } from "@mui/material";
+import { Alert, Box, Button, TextField, Typography } from "@mui/material";
 import { someAction } from "@/lib/actions/roster";
 import { initialFormResult } from "@/lib/actions/result";
 
@@ -163,9 +201,16 @@ export default function SomeForm({ options }: { options: { id: string; name: str
   const [state, formAction, isPending] = useActionState(someAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
-      <TextField name="field" label="Field" required fullWidth margin="normal" />
-      {state.error ? <Alert severity="error" sx={{ mt: 2 }}>{state.error}</Alert> : null}
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
+      {state.error ? <Alert severity="error" sx={{ mb: 2 }}>{state.error}</Alert> : null}
+
+      <Typography variant="overline" color="text.secondary">Section</Typography>
+
+      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+        <TextField name="fieldA" label="Field A" required fullWidth margin="none" />
+        <TextField name="fieldB" label="Field B" required fullWidth margin="none" />
+      </Box>
+
       <Button type="submit" variant="contained" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? "Saving..." : "Save"}
       </Button>
@@ -174,8 +219,30 @@ export default function SomeForm({ options }: { options: { id: string; name: str
 }
 ```
 
+Conventions, applied consistently across every portal:
+
+- **Error to the top.** The server error is the first child of the form (after
+  any hidden inputs), as `<Alert severity="error" sx={{ mb: 2 }}>`. A success
+  banner, when the action returns `ok`, sits just above the submit button.
+- **Group labels.** Related fields are grouped under a
+  `<Typography variant="overline" color="text.secondary">` label ("Student
+  details", "Login", "Teacher", "Subject details"). Add `sx={{ mt: 3 }}` to a
+  label that follows another group.
+- **Pair fields.** Two short fields that belong together (name + email, roll
+  number + class, present + absent) sit in a 2-column grid with `margin="none"`
+  on the inner fields. Full-width single fields keep `margin="normal"`.
+- **Widths.** Forms are capped at `maxWidth: 560`; a single short field
+  (profile name) may be 480. Date fields are constrained to `sx={{ maxWidth: 240 }}`
+  so the control is never wider than the date it holds.
+- **Buttons.** `variant="contained"`, `disabled={isPending}`, `sx={{ mt: 3 }}`;
+  show a `CircularProgress` while pending.
+
 The `name` attribute on each field must match the key the action reads with
 `readString` / `readInt`.
+
+Forms carry a single global `error` string — there are no per-field errors, so
+the surface treatment above is the whole story; do not invent inline field
+validation.
 
 ## Verifying
 
