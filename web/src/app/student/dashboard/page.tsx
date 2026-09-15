@@ -1,15 +1,10 @@
 import Link from "@/components/NextLink";
 import { Box, Button, Paper, Typography } from "@mui/material";
-import AnnouncementIcon from "@mui/icons-material/Announcement";
-import GradeIcon from "@mui/icons-material/Grade";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import PercentIcon from "@mui/icons-material/Percent";
 
 import AttendancePieChart from "@/components/charts/AttendancePieChart";
-import MarksBarChart from "@/components/charts/MarksBarChart";
+import QuestionBarChart from "@/components/charts/QuestionBarChart";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
-import StatCard from "@/components/ui/StatCard";
 import { requireRoleWithTenant } from "@/lib/auth/session";
 import {
   getOwnStudentRecord,
@@ -23,17 +18,45 @@ export const metadata = {
   title: "Student dashboard",
 };
 
+/** A supporting figure block: label, big number, and a quiet hint. */
+function Figure({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
+  return (
+    <Box sx={{ p: 2, borderRadius: "14px", border: "1px solid", borderColor: "divider" }}>
+      <Typography variant="overline" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="h3" sx={{ lineHeight: 1.1, color: "secondary.main" }}>
+        {value}
+      </Typography>
+      {hint ? (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+          {hint}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
 /**
  * The student's home page.
+ *
+ * The question it answers is "How am I doing - attendance and marks - and
+ * what's new?" The hero is the attendance donut with the overall percentage
+ * beside it, plus two supporting figures (average marks, subjects). Then the
+ * per-subject attendance and marks, then the recent notices.
  *
  * A student's identity *is* their user id: `public.students.id` equals the
  * `profiles.id` of the account, so `session.id` is handed straight to the read
  * helpers. Row Level Security then limits each of those reads to this student's
  * own rows, which is why none of them carries a school filter.
- *
- * The legacy portal computed every figure here in the browser from an embedded
- * attendance array (`attendanceCalculator.js`). That arithmetic now lives in
- * `summariseAttendanceForStudent()`, so this page only aggregates its result.
  */
 export default async function StudentDashboardPage() {
   const session = await requireRoleWithTenant("student");
@@ -70,6 +93,16 @@ export default async function StudentDashboardPage() {
   const marksTotal = marks.reduce((total, entry) => total + entry.marksObtained, 0);
   const averageMarks = marks.length > 0 ? Math.round((marksTotal / marks.length) * 10) / 10 : null;
 
+  const attendanceBySubject = attendance.map((entry) => ({
+    name: entry.subjectName,
+    value: entry.percentage,
+  }));
+
+  const marksBySubject = marks.map((entry) => ({
+    name: entry.subjectName,
+    value: entry.marksObtained,
+  }));
+
   const recentNotices = notices.slice(0, 5);
 
   return (
@@ -84,57 +117,80 @@ export default async function StudentDashboardPage() {
         }
       />
 
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
-          mb: 4,
-        }}
-      >
-        <StatCard
-          label="Overall attendance"
-          value={recorded > 0 ? `${attendancePercentage}%` : "-"}
-          hint={recorded > 0 ? `${present} present of ${recorded} recorded` : "No attendance recorded yet"}
-          icon={<PercentIcon />}
-          primary
-        />
-        <StatCard
-          label="Subjects"
-          value={subjects.length}
-          hint={`In ${student.className}`}
-          icon={<MenuBookIcon />}
-          tone="primary"
-        />
-        <StatCard
-          label="Average marks"
-          value={averageMarks ?? "-"}
-          hint={
-            marks.length > 0
-              ? `Across ${marks.length} subject${marks.length === 1 ? "" : "s"}`
-              : "No marks recorded yet"
-          }
-          icon={<GradeIcon />}
-          tone="deepGreen"
-        />
-        <StatCard
-          label="Notices"
-          value={notices.length}
-          hint="Published by your school"
-          icon={<AnnouncementIcon />}
-          tone="warning"
-        />
-      </Box>
+      <Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+        <Typography variant="overline" color="text.secondary">
+          Attendance
+        </Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Attendance overall
+        </Typography>
+
+        <Box
+          sx={{
+            display: "grid",
+            gap: 3,
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            alignItems: "center",
+          }}
+        >
+          <AttendancePieChart present={present} absent={absent} height={260} />
+
+          <Box sx={{ display: "grid", gap: 2 }}>
+            <Figure
+              label="Overall attendance"
+              value={recorded > 0 ? `${attendancePercentage}%` : "-"}
+              hint={
+                recorded > 0
+                  ? `${present} present of ${recorded} recorded`
+                  : "No attendance recorded yet"
+              }
+            />
+            <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+              <Figure
+                label="Average marks"
+                value={averageMarks ?? "-"}
+                hint={
+                  marks.length > 0
+                    ? `Across ${marks.length} subject${marks.length === 1 ? "" : "s"}`
+                    : "No marks recorded yet"
+                }
+              />
+              <Figure
+                label="Subjects"
+                value={subjects.length}
+                hint={`In ${student.className}`}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
 
       <Box
         sx={{
           display: "grid",
           gap: 3,
-          gridTemplateColumns: { xs: "1fr", lg: "3fr 2fr" },
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
           alignItems: "start",
-          mb: 3,
+          mb: 4,
         }}
       >
+        <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Attendance
+          </Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Attendance by subject
+          </Typography>
+          <QuestionBarChart
+            data={attendanceBySubject}
+            question="Attendance by subject"
+            unit="%"
+            horizontal
+            color="#147B45"
+            height={Math.max(220, attendanceBySubject.length * 44)}
+          />
+        </Paper>
+
         <Paper variant="outlined" sx={{ p: 3 }}>
           <Typography variant="overline" color="text.secondary">
             Results
@@ -142,20 +198,13 @@ export default async function StudentDashboardPage() {
           <Typography variant="h6" sx={{ mb: 2 }}>
             Marks by subject
           </Typography>
-          <MarksBarChart
-            data={marks.map((entry) => ({ name: entry.subjectName, value: entry.marksObtained }))}
-            height={300}
+          <QuestionBarChart
+            data={marksBySubject}
+            question="Marks by subject"
+            unit="marks"
+            color="#083E28"
+            height={Math.max(220, marksBySubject.length * 44)}
           />
-        </Paper>
-
-        <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography variant="overline" color="text.secondary">
-            Attendance
-          </Typography>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Attendance overall
-          </Typography>
-          <AttendancePieChart present={present} absent={absent} height={300} />
         </Paper>
       </Box>
 
