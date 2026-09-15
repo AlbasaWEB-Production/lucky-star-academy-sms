@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import Link from "@/components/NextLink";
 import { usePathname } from "next/navigation";
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Divider,
   Drawer,
@@ -16,10 +17,14 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Popover,
   Toolbar,
   Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -35,6 +40,9 @@ import { signOutAction } from "@/lib/auth/actions";
 import { DISPLAY_FONT, DRAWER_WIDTH } from "@/theme";
 import { NAV_SECTIONS } from "./nav";
 import type { UserRole } from "@/lib/supabase/database.types";
+import type { HeaderData } from "@/lib/data/header";
+import NotificationFeed from "./NotificationFeed";
+import CalendarGrid from "./CalendarGrid";
 
 /** Small icon per sidebar route, so the nav reads icon+label like the reference. */
 const NAV_ICON: Record<string, ReactNode> = {
@@ -47,6 +55,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/admin/students": <GroupsIcon fontSize="inherit" />,
   "/teacher/students": <GroupsIcon fontSize="inherit" />,
   "/admin/teachers": <SchoolIcon fontSize="inherit" />,
+  "/admin/admins": <SchoolIcon fontSize="inherit" />,
   "/admin/classes": <MenuBookIcon fontSize="inherit" />,
   "/teacher/classes": <MenuBookIcon fontSize="inherit" />,
   "/admin/subjects": <MenuBookIcon fontSize="inherit" />,
@@ -64,32 +73,50 @@ const NAV_ICON: Record<string, ReactNode> = {
 };
 
 /**
- * Dashboard shell: minimal top bar, role-aware sidebar, and the account menu.
+ * Dashboard shell: top bar with real jobs, role-aware sidebar, and the
+ * account menu.
  *
- * Mirrors the reference's shell — a near-white top bar with the logo on the
- * left and a search + avatar on the right, and a sidebar whose active item is
- * a rounded "pill" in the school green. A client component because the drawer
- * and menu hold interaction state. Page content is passed in as `children`,
- * so the pages themselves stay server components and keep their own fetching.
+ * The top bar carries information, not chrome: today's date, a notification
+ * bell with a role-aware feed, a calendar showing the days that actually hold
+ * records, and the account menu. On the smallest screens the date, bell,
+ * calendar and account collapse into a single "More" menu so the bar stays one
+ * line. The feed and calendar are computed on the server (`getHeaderData`) and
+ * arrive here as plain props - this client component never touches the
+ * database.
  */
 export default function AppShell({
   role,
   fullName,
   email,
   schoolName,
+  headerData,
   children,
 }: {
   role: UserRole;
   fullName: string;
   email: string | null;
   schoolName: string;
+  headerData: HeaderData;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+  const [calendarAnchor, setCalendarAnchor] = useState<null | HTMLElement>(null);
+
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
 
   const sections = NAV_SECTIONS[role];
+
+  const [ty, tm, td] = headerData.today.split("-").map(Number);
+  const todayLabel = new Date(ty, tm - 1, td).toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   const initials = fullName
     .split(" ")
@@ -163,6 +190,8 @@ export default function AppShell({
     </Box>
   );
 
+  const notificationCount = headerData.notifications.length;
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "background.default" }}>
       <AppBar
@@ -204,11 +233,88 @@ export default function AppShell({
 
           <Box sx={{ flex: 1 }} />
 
-          <IconButton onClick={(event) => setMenuAnchor(event.currentTarget)} aria-label="Account">
-            <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: 15 }}>
-              {initials || "?"}
-            </Avatar>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{ display: { xs: "none", sm: "block" } }}
+          >
+            {todayLabel}
+          </Typography>
+
+          <Box
+            sx={{
+              display: { xs: "none", sm: "flex" },
+              alignItems: "center",
+              gap: 0.5,
+            }}
+          >
+            <IconButton onClick={(event) => setNotifAnchor(event.currentTarget)} aria-label="Notifications">
+              <Badge badgeContent={notificationCount} color="error" invisible={notificationCount === 0}>
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+
+            <IconButton onClick={(event) => setCalendarAnchor(event.currentTarget)} aria-label="Calendar">
+              <CalendarMonthIcon />
+            </IconButton>
+
+            <IconButton onClick={(event) => setMenuAnchor(event.currentTarget)} aria-label="Account">
+              <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: 15 }}>
+                {initials || "?"}
+              </Avatar>
+            </IconButton>
+          </Box>
+
+          {/* Smallest screens: collapse the date, bell, calendar and account
+              into one "More" menu so the bar stays a single line. */}
+          <IconButton
+            ref={moreBtnRef}
+            onClick={() => setMoreOpen(true)}
+            aria-label="More options"
+            sx={{ display: { xs: "flex", sm: "none" } }}
+          >
+            <MoreHorizIcon />
           </IconButton>
+
+          <Menu
+            anchorEl={moreBtnRef.current}
+            open={moreOpen}
+            onClose={() => setMoreOpen(false)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem
+              onClick={() => {
+                setMoreOpen(false);
+                setNotifAnchor(moreBtnRef.current);
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <NotificationsIcon fontSize="small" />
+              </ListItemIcon>
+              Notifications
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMoreOpen(false);
+                setCalendarAnchor(moreBtnRef.current);
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <CalendarMonthIcon fontSize="small" />
+              </ListItemIcon>
+              Calendar
+            </MenuItem>
+            <MenuItem component={Link} href={`/${role}/profile`} onClick={() => setMoreOpen(false)}>
+              My profile
+            </MenuItem>
+            <form action={signOutAction}>
+              <MenuItem component="button" type="submit" sx={{ width: "100%" }}>
+                Sign out
+              </MenuItem>
+            </form>
+          </Menu>
 
           <Menu
             anchorEl={menuAnchor}
@@ -245,6 +351,26 @@ export default function AppShell({
               </MenuItem>
             </form>
           </Menu>
+
+          <Popover
+            open={Boolean(notifAnchor)}
+            anchorEl={notifAnchor}
+            onClose={() => setNotifAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <NotificationFeed notifications={headerData.notifications} />
+          </Popover>
+
+          <Popover
+            open={Boolean(calendarAnchor)}
+            anchorEl={calendarAnchor}
+            onClose={() => setCalendarAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <CalendarGrid calendar={headerData.calendar} today={headerData.today} role={role} />
+          </Popover>
         </Toolbar>
       </AppBar>
 

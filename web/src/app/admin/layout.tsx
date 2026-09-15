@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import AppShell from "@/components/layout/AppShell";
 import { loadShellContext } from "@/lib/auth/shell-context";
+import { getHeaderData } from "@/lib/data/header";
 
 /**
  * Layout for every /admin route.
@@ -19,10 +20,17 @@ import { loadShellContext } from "@/lib/auth/shell-context";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const { fullName, email, schoolName } = await loadShellContext("admin");
+  const { session, fullName, email, schoolName } = await loadShellContext("admin");
+  const headerData = await getHeaderData("admin", session.id);
 
   return (
-    <AppShell role="admin" fullName={fullName} email={email} schoolName={schoolName}>
+    <AppShell
+      role="admin"
+      fullName={fullName}
+      email={email}
+      schoolName={schoolName}
+      headerData={headerData}
+    >
       {children}
     </AppShell>
   );

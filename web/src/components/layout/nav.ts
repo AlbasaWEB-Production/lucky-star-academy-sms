@@ -33,6 +33,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       items: [
         { label: "Students", href: "/admin/students" },
         { label: "Teachers", href: "/admin/teachers" },
+        { label: "Administrators", href: "/admin/admins" },
       ],
     },
     {

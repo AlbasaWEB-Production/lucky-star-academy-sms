@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import AppShell from "@/components/layout/AppShell";
 import { loadShellContext } from "@/lib/auth/shell-context";
+import { getHeaderData } from "@/lib/data/header";
 
 /**
  * Layout for every /teacher route.
@@ -12,10 +13,17 @@ import { loadShellContext } from "@/lib/auth/shell-context";
 export const dynamic = "force-dynamic";
 
 export default async function TeacherLayout({ children }: { children: ReactNode }) {
-  const { fullName, email, schoolName } = await loadShellContext("teacher");
+  const { session, fullName, email, schoolName } = await loadShellContext("teacher");
+  const headerData = await getHeaderData("teacher", session.id);
 
   return (
-    <AppShell role="teacher" fullName={fullName} email={email} schoolName={schoolName}>
+    <AppShell
+      role="teacher"
+      fullName={fullName}
+      email={email}
+      schoolName={schoolName}
+      headerData={headerData}
+    >
       {children}
     </AppShell>
   );
