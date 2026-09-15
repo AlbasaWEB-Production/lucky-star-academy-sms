@@ -36,6 +36,7 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 
 import SchoolLogo from "@/components/ui/SchoolLogo";
+import SiteFooter from "@/components/ui/SiteFooter";
 import { signOutAction } from "@/lib/auth/actions";
 import { DISPLAY_FONT, DRAWER_WIDTH } from "@/theme";
 import { NAV_SECTIONS } from "./nav";
@@ -401,8 +402,9 @@ export default function AppShell({
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flex: 1, minWidth: 0, p: { xs: 2, sm: 3 }, mt: 8 }}>
-        {children}
+      <Box component="main" sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <Box sx={{ flex: 1, p: { xs: 2, sm: 3 }, mt: 8 }}>{children}</Box>
+        <SiteFooter schoolName={schoolName} />
       </Box>
     </Box>
   );

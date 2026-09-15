@@ -16,6 +16,7 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 
 import SetupBanner from "@/components/SetupBanner";
 import SchoolLogo from "@/components/ui/SchoolLogo";
+import SiteFooter from "@/components/ui/SiteFooter";
 import StudentPhotoCollage from "@/components/ui/StudentPhotoCollage";
 import { BRAND_GOLD } from "@/theme";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -302,6 +303,8 @@ export default function HomePage() {
           </Typography>
         </Container>
       </Box>
+
+      <SiteFooter />
     </Box>
   );
 }
