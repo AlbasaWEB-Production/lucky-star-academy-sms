@@ -57,6 +57,7 @@ export type Database = {
       };
       classes: {
         Row: {
+          campus: string | null;
           created_at: string;
           id: string;
           name: string;
@@ -64,6 +65,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          campus?: string | null;
           created_at?: string;
           id?: string;
           name: string;
@@ -71,6 +73,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          campus?: string | null;
           created_at?: string;
           id?: string;
           name?: string;
@@ -103,6 +106,30 @@ export type Database = {
           id?: string;
           school_id?: string;
           student_id?: string;
+        };
+        Relationships: [];
+      };
+      dashboard_thresholds: {
+        Row: {
+          id: number;
+          key: string;
+          school_id: string;
+          updated_at: string;
+          value: string;
+        };
+        Insert: {
+          id?: never;
+          key: string;
+          school_id: string;
+          updated_at?: string;
+          value: string;
+        };
+        Update: {
+          id?: never;
+          key?: string;
+          school_id?: string;
+          updated_at?: string;
+          value?: string;
         };
         Relationships: [];
       };
@@ -319,6 +346,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      terms: {
+        Row: {
+          created_at: string;
+          end_date: string;
+          id: string;
+          name: string;
+          school_id: string;
+          start_date: string;
+          term_number: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          end_date: string;
+          id?: string;
+          name: string;
+          school_id: string;
+          start_date: string;
+          term_number: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          end_date?: string;
+          id?: string;
+          name?: string;
+          school_id?: string;
+          start_date?: string;
+          term_number?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       student_directory: {
@@ -335,8 +395,85 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_attendance_heatmap: {
+        Row: {
+          class_id: string;
+          date: string;
+          roll_number: number;
+          school_id: string;
+          status: Database["public"]["Enums"]["attendance_status"];
+          student_id: string;
+          student_name: string;
+        };
+        Relationships: [];
+      };
+      v_attendance_rate_by_class: {
+        Row: {
+          absent: number;
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          present: number;
+          rate_percent: number;
+          school_id: string;
+          total_registers: number;
+        };
+        Relationships: [];
+      };
+      v_enrolment_by_campus: {
+        Row: {
+          campus: string | null;
+          school_id: string;
+          student_count: number;
+        };
+        Relationships: [];
+      };
+      v_grade_distribution: {
+        Row: {
+          class_id: string;
+          marks_obtained: number;
+          school_id: string;
+          subject_id: string;
+          subject_name: string;
+        };
+        Relationships: [];
+      };
+      v_marks_by_class_subject: {
+        Row: {
+          avg_mark: number | null;
+          class_id: string;
+          class_name: string;
+          school_id: string;
+          student_count: number;
+          subject_id: string;
+          subject_name: string;
+        };
+        Relationships: [];
+      };
+      v_teacher_subject_load: {
+        Row: {
+          school_id: string;
+          subject_count: number;
+          teacher_id: string | null;
+          teacher_name: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
+      fn_at_risk_pupils: {
+        Args: Record<string, never>;
+        Returns: {
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          reason: string;
+          roll_number: number;
+          school_id: string;
+          student_id: string;
+          student_name: string;
+        }[];
+      };
       jwt_role: {
         Args: Record<string, never>;
         Returns: string;
@@ -382,6 +519,13 @@ export type TablesUpdate<T extends keyof PublicSchema["Tables"]> =
 export type Views<T extends keyof PublicSchema["Views"]> =
   PublicSchema["Views"][T]["Row"];
 
+/**
+ * A single row of a set-returning function, e.g.
+ * `Functions<"fn_at_risk_pupils">` is one at-risk pupil.
+ */
+export type Functions<T extends keyof PublicSchema["Functions"]> =
+  PublicSchema["Functions"][T]["Returns"] extends (infer R)[] ? R : never;
+
 export type Enums<T extends keyof PublicSchema["Enums"]> = PublicSchema["Enums"][T];
 
 /** Application-facing role name, matching the legacy Admin/Teacher/Student labels. */
@@ -397,4 +541,16 @@ export type Attendance = Tables<"attendance">;
 export type TeacherAttendance = Tables<"teacher_attendance">;
 export type Notice = Tables<"notices">;
 export type Complaint = Tables<"complaints">;
+export type Term = Tables<"terms">;
+export type DashboardThreshold = Tables<"dashboard_thresholds">;
 export type StudentDirectoryEntry = Views<"student_directory">;
+
+// Analytic view models (all `security_invoker`, so RLS still applies).
+export type AttendanceRateByClass = Views<"v_attendance_rate_by_class">;
+export type MarksByClassSubject = Views<"v_marks_by_class_subject">;
+export type EnrolmentByCampus = Views<"v_enrolment_by_campus">;
+export type AttendanceHeatmapRow = Views<"v_attendance_heatmap">;
+export type TeacherSubjectLoad = Views<"v_teacher_subject_load">;
+export type GradeDistributionRow = Views<"v_grade_distribution">;
+
+export type AtRiskPupil = Functions<"fn_at_risk_pupils">;

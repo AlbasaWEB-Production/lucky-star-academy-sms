@@ -2,9 +2,35 @@
 
 import type { ReactNode } from "react";
 import { alpha, Box, Paper, Typography, useTheme, type Theme } from "@mui/material";
+import { visuallyHidden } from "@mui/utils";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { BRAND_GOLD } from "@/theme";
 
 export type StatCardTone = "primary" | "deepGreen" | "gold" | "neutral" | "warning" | "error";
+
+/**
+ * A change against a previous period, shown under the metric.
+ *
+ * `direction` says which way the number moved; `positive` says whether that
+ * movement is *good*, which is not the same thing — a falling absence rate
+ * moves down and is good news. When `positive` is omitted it defaults to
+ * `direction === "up"`.
+ *
+ * Direction is never carried by colour alone: each state pairs its colour with
+ * an arrow icon and the `label` text, so the meaning survives greyscale and a
+ * screen reader.
+ */
+export type StatCardTrend = {
+  /** The change itself, e.g. `+4.2 pts`, `−3 pupils`. */
+  value: string;
+  direction: "up" | "down" | "flat";
+  /** Whether this movement is good news. Defaults to `direction === "up"`. */
+  positive?: boolean;
+  /** What the change is measured against, e.g. `vs last term`. */
+  label?: string;
+};
 
 /** Map a semantic tone to the concrete colour it stands for, from the theme. */
 function toneColor(theme: Theme, tone: StatCardTone): string {
@@ -40,6 +66,7 @@ export default function StatCard({
   icon,
   tone = "primary",
   primary = false,
+  trend,
 }: {
   label: string;
   value: ReactNode;
@@ -47,6 +74,7 @@ export default function StatCard({
   icon?: ReactNode;
   tone?: StatCardTone;
   primary?: boolean;
+  trend?: StatCardTrend;
 }) {
   const theme = useTheme();
   const accent = toneColor(theme, tone);
@@ -131,6 +159,54 @@ export default function StatCard({
           {hint}
         </Typography>
       ) : null}
+
+      {trend ? <StatCardTrendRow trend={trend} primary={primary} /> : null}
     </Paper>
+  );
+}
+
+/**
+ * The delta line. Extracted so the icon choice and the accessible text are
+ * written once: a screen reader hears "Improving, +4.2 pts vs last term"
+ * rather than an arrow glyph with no name.
+ */
+function StatCardTrendRow({ trend, primary }: { trend: StatCardTrend; primary: boolean }) {
+  const theme = useTheme();
+  const isGood = trend.positive ?? trend.direction === "up";
+
+  const Icon =
+    trend.direction === "up" ? TrendingUpIcon : trend.direction === "down" ? TrendingDownIcon : TrendingFlatIcon;
+
+  const directionWord =
+    trend.direction === "up" ? "Rising" : trend.direction === "down" ? "Falling" : "Unchanged";
+
+  const goodColor = theme.palette.success.dark;
+  const badColor = theme.palette.error.dark;
+  const colour = primary
+    ? "rgba(255, 255, 255, 0.92)"
+    : trend.direction === "flat"
+      ? theme.palette.text.secondary
+      : isGood
+        ? goodColor
+        : badColor;
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: "auto", pt: 0.5 }}>
+      <Icon sx={{ fontSize: 18, color: colour }} aria-hidden />
+      <Typography variant="caption" sx={{ color: colour, fontWeight: 600 }}>
+        <Box component="span" sx={visuallyHidden}>
+          {`${directionWord}, `}
+        </Box>
+        {trend.value}
+      </Typography>
+      {trend.label ? (
+        <Typography
+          variant="caption"
+          sx={primary ? { color: "rgba(255, 255, 255, 0.75)" } : { color: "text.secondary" }}
+        >
+          {trend.label}
+        </Typography>
+      ) : null}
+    </Box>
   );
 }
