@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { Box, Typography } from "@mui/material";
-import { BRAND_GREEN } from "@/theme";
+import { CHART_COLORS } from "./tokens";
 
 /**
  * Marks per subject.
@@ -21,7 +21,7 @@ import { BRAND_GREEN } from "@/theme";
 export default function MarksBarChart({
   data,
   height = 300,
-  color = BRAND_GREEN,
+  color = CHART_COLORS[0],
 }: {
   data: { name: string; value: number }[];
   height?: number;

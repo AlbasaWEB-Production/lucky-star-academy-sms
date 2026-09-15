@@ -2,7 +2,7 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Box, Typography } from "@mui/material";
-import { BRAND_GREEN } from "@/theme";
+import { CHART_COLORS } from "./tokens";
 
 /**
  * Present vs absent breakdown.
@@ -32,7 +32,7 @@ export default function AttendancePieChart({
   }
 
   const data = [
-    { name: "Present", value: present, color: BRAND_GREEN },
+    { name: "Present", value: present, color: CHART_COLORS[0] },
     { name: "Absent", value: absent, color: "#C62828" },
   ];
 
