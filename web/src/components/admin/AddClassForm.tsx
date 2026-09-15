@@ -16,7 +16,13 @@ export default function AddClassForm() {
   const [state, formAction, isPending] = useActionState(createClassAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="className"
         label="Class name"
@@ -26,12 +32,6 @@ export default function AddClassForm() {
         margin="normal"
         helperText="For example: Class 10 A."
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? <CircularProgress size={24} color="inherit" /> : "Create class"}

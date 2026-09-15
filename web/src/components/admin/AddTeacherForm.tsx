@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField, Typography } from "@mui/material";
 
 import PasswordField from "@/components/auth/PasswordField";
 import { createTeacherAction } from "@/lib/actions/roster";
@@ -24,25 +24,47 @@ export default function AddTeacherForm({
   const [state, formAction, isPending] = useActionState(createTeacherAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
-      <TextField
-        name="fullName"
-        label="Teacher name"
-        required
-        fullWidth
-        autoFocus
-        margin="normal"
-      />
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
 
-      <TextField
-        name="email"
-        label="Email address"
-        type="email"
-        required
-        fullWidth
-        margin="normal"
-        helperText="The teacher signs in with this address."
-      />
+      <Typography variant="overline" color="text.secondary">
+        Teacher details
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <TextField
+          name="fullName"
+          label="Teacher name"
+          required
+          fullWidth
+          autoFocus
+          margin="none"
+        />
+
+        <TextField
+          name="email"
+          label="Email address"
+          type="email"
+          required
+          fullWidth
+          margin="none"
+          helperText="The teacher signs in with this address."
+        />
+      </Box>
+
+      <Typography variant="overline" color="text.secondary" sx={{ mt: 3 }}>
+        Login
+      </Typography>
 
       <PasswordField
         name="password"
@@ -52,6 +74,10 @@ export default function AddTeacherForm({
         margin="normal"
         helperText="At least 8 characters. Share it with the teacher."
       />
+
+      <Typography variant="overline" color="text.secondary" sx={{ mt: 3 }}>
+        Assignment
+      </Typography>
 
       <TextField
         name="subjectId"
@@ -73,12 +99,6 @@ export default function AddTeacherForm({
           </MenuItem>
         ))}
       </TextField>
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? <CircularProgress size={24} color="inherit" /> : "Add teacher"}

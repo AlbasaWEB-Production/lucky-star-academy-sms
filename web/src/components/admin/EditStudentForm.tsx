@@ -8,6 +8,7 @@ import {
   CircularProgress,
   MenuItem,
   TextField,
+  Typography,
 } from "@mui/material";
 
 import { updateStudentAction } from "@/lib/actions/roster";
@@ -30,8 +31,18 @@ export default function EditStudentForm({
   const [state, formAction, isPending] = useActionState(updateStudentAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
       <input type="hidden" name="studentId" value={student.id} />
+
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
+      <Typography variant="overline" color="text.secondary">
+        Student details
+      </Typography>
 
       <TextField
         name="fullName"
@@ -42,32 +53,44 @@ export default function EditStudentForm({
         margin="normal"
       />
 
-      <TextField
-        name="rollNumber"
-        label="Roll number"
-        type="number"
-        defaultValue={student.rollNumber}
-        required
-        fullWidth
-        margin="normal"
-        slotProps={{ htmlInput: { min: 1, step: 1 } }}
-      />
-
-      <TextField
-        name="classId"
-        label="Class"
-        select
-        required
-        fullWidth
-        margin="normal"
-        defaultValue={student.classId}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
       >
-        {classes.map((option) => (
-          <MenuItem key={option.id} value={option.id}>
-            {option.name}
-          </MenuItem>
-        ))}
-      </TextField>
+        <TextField
+          name="rollNumber"
+          label="Roll number"
+          type="number"
+          defaultValue={student.rollNumber}
+          required
+          fullWidth
+          margin="none"
+          slotProps={{ htmlInput: { min: 1, step: 1 } }}
+        />
+
+        <TextField
+          name="classId"
+          label="Class"
+          select
+          required
+          fullWidth
+          margin="none"
+          defaultValue={student.classId}
+        >
+          {classes.map((option) => (
+            <MenuItem key={option.id} value={option.id}>
+              {option.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
+      <Typography variant="overline" color="text.secondary" sx={{ mt: 3 }}>
+        Login
+      </Typography>
 
       <PasswordField
         name="password"
@@ -76,12 +99,6 @@ export default function EditStudentForm({
         margin="normal"
         helperText="Leave blank to keep the current password."
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? <CircularProgress size={24} color="inherit" /> : "Save changes"}
