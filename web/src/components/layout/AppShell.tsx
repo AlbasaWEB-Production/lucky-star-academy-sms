@@ -12,6 +12,7 @@ import {
   IconButton,
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Menu,
   MenuItem,
@@ -19,19 +20,57 @@ import {
   Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import PersonIcon from "@mui/icons-material/Person";
+import GroupsIcon from "@mui/icons-material/Groups";
+import SchoolIcon from "@mui/icons-material/School";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import GradingIcon from "@mui/icons-material/Grading";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 
 import SchoolLogo from "@/components/ui/SchoolLogo";
 import { signOutAction } from "@/lib/auth/actions";
-import { DRAWER_WIDTH } from "@/theme";
+import { DISPLAY_FONT, DRAWER_WIDTH } from "@/theme";
 import { NAV_SECTIONS } from "./nav";
 import type { UserRole } from "@/lib/supabase/database.types";
 
+/** Small icon per sidebar route, so the nav reads icon+label like the reference. */
+const NAV_ICON: Record<string, ReactNode> = {
+  "/admin/dashboard": <DashboardIcon fontSize="inherit" />,
+  "/teacher/dashboard": <DashboardIcon fontSize="inherit" />,
+  "/student/dashboard": <DashboardIcon fontSize="inherit" />,
+  "/admin/profile": <PersonIcon fontSize="inherit" />,
+  "/teacher/profile": <PersonIcon fontSize="inherit" />,
+  "/student/profile": <PersonIcon fontSize="inherit" />,
+  "/admin/students": <GroupsIcon fontSize="inherit" />,
+  "/teacher/students": <GroupsIcon fontSize="inherit" />,
+  "/admin/teachers": <SchoolIcon fontSize="inherit" />,
+  "/admin/classes": <MenuBookIcon fontSize="inherit" />,
+  "/teacher/classes": <MenuBookIcon fontSize="inherit" />,
+  "/admin/subjects": <MenuBookIcon fontSize="inherit" />,
+  "/student/subjects": <MenuBookIcon fontSize="inherit" />,
+  "/admin/attendance": <EventNoteIcon fontSize="inherit" />,
+  "/teacher/attendance": <EventNoteIcon fontSize="inherit" />,
+  "/student/attendance": <EventNoteIcon fontSize="inherit" />,
+  "/admin/exam-marks": <GradingIcon fontSize="inherit" />,
+  "/teacher/exam-marks": <GradingIcon fontSize="inherit" />,
+  "/admin/notices": <CampaignIcon fontSize="inherit" />,
+  "/teacher/notices": <CampaignIcon fontSize="inherit" />,
+  "/student/notices": <CampaignIcon fontSize="inherit" />,
+  "/admin/complaints": <ReportGmailerrorredIcon fontSize="inherit" />,
+  "/student/complaints": <ReportGmailerrorredIcon fontSize="inherit" />,
+};
+
 /**
- * Dashboard shell: top bar, role-aware sidebar, and the account menu.
+ * Dashboard shell: minimal top bar, role-aware sidebar, and the account menu.
  *
- * A client component because the drawer and menu hold interaction state.
- * Page content is passed in as `children`, so the pages themselves stay
- * server components and keep doing their own data fetching.
+ * Mirrors the reference's shell — a near-white top bar with the logo on the
+ * left and a search + avatar on the right, and a sidebar whose active item is
+ * a rounded "pill" in the school green. A client component because the drawer
+ * and menu hold interaction state. Page content is passed in as `children`,
+ * so the pages themselves stay server components and keep their own fetching.
  */
 export default function AppShell({
   role,
@@ -61,16 +100,8 @@ export default function AppShell({
 
   const drawerContent = (
     <Box sx={{ width: DRAWER_WIDTH, height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar sx={{ gap: 1.5 }}>
-        <SchoolLogo decorative sizes="50px" sx={{ height: 40, flexShrink: 0 }} />
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
-            {schoolName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>
-            {role.charAt(0).toUpperCase() + role.slice(1)} portal
-          </Typography>
-        </Box>
+      <Toolbar sx={{ px: 2 }}>
+        <SchoolLogo decorative sizes="160px" sx={{ height: 40 }} />
       </Toolbar>
 
       <Divider />
@@ -81,7 +112,7 @@ export default function AppShell({
             {section.heading ? (
               <Typography
                 variant="overline"
-                sx={{ px: 2, pt: 1, display: "block", color: "text.secondary" }}
+                sx={{ px: 2.5, pt: 1, display: "block", color: "text.secondary" }}
               >
                 {section.heading}
               </Typography>
@@ -99,15 +130,23 @@ export default function AppShell({
                     selected={selected}
                     onClick={() => setMobileOpen(false)}
                     sx={{
-                      mx: 1,
-                      borderRadius: 1,
+                      mx: 1.5,
+                      my: 0.25,
+                      borderRadius: 999,
+                      px: 1.5,
                       "&.Mui-selected": {
                         backgroundColor: "primary.main",
                         color: "primary.contrastText",
                         "&:hover": { backgroundColor: "primary.dark" },
+                        "& .MuiListItemIcon-root": { color: "#ffffff" },
                       },
                     }}
                   >
+                    <ListItemIcon
+                      sx={{ minWidth: 32, color: "text.secondary", fontSize: 20 }}
+                    >
+                      {NAV_ICON[item.href] ?? <PersonIcon fontSize="inherit" />}
+                    </ListItemIcon>
                     <ListItemText
                       primary={item.label}
                       slotProps={{
@@ -138,7 +177,7 @@ export default function AppShell({
           backgroundColor: "background.paper",
         }}
       >
-        <Toolbar sx={{ gap: 1 }}>
+        <Toolbar sx={{ gap: 1.5 }}>
           <IconButton
             edge="start"
             aria-label="Open navigation"
@@ -148,9 +187,22 @@ export default function AppShell({
             <MenuIcon />
           </IconButton>
 
-          <Typography variant="h6" sx={{ flex: 1, minWidth: 0 }} noWrap>
-            School Management System
-          </Typography>
+          <SchoolLogo decorative sizes="140px" sx={{ height: 36, flexShrink: 0 }} />
+
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="subtitle2"
+              noWrap
+              sx={{ fontFamily: DISPLAY_FONT, fontWeight: 700, lineHeight: 1.2 }}
+            >
+              {schoolName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
+              {role.charAt(0).toUpperCase() + role.slice(1)} portal
+            </Typography>
+          </Box>
+
+          <Box sx={{ flex: 1 }} />
 
           <IconButton onClick={(event) => setMenuAnchor(event.currentTarget)} aria-label="Account">
             <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: 15 }}>
@@ -223,10 +275,7 @@ export default function AppShell({
         </Drawer>
       </Box>
 
-      <Box
-        component="main"
-        sx={{ flex: 1, minWidth: 0, p: { xs: 2, sm: 3 }, mt: 8 }}
-      >
+      <Box component="main" sx={{ flex: 1, minWidth: 0, p: { xs: 2, sm: 3 }, mt: 8 }}>
         {children}
       </Box>
     </Box>

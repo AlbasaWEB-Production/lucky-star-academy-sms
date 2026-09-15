@@ -3,6 +3,7 @@ import { Typography } from "@mui/material";
 
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterSchoolForm from "@/components/auth/RegisterSchoolForm";
+import { BRAND_GREEN } from "@/theme";
 
 export const metadata = {
   title: "Register your school",
@@ -16,7 +17,7 @@ export default function RegisterSchoolPage() {
       footer={
         <Typography variant="body2" color="text.secondary" align="center">
           Already registered?{" "}
-          <Link href="/login/admin" style={{ color: "#7f56da", fontWeight: 600 }}>
+          <Link href="/login/admin" style={{ color: BRAND_GREEN, fontWeight: 600 }}>
             Sign in
           </Link>
         </Typography>

@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 
 import SchoolLogo from "@/components/ui/SchoolLogo";
+import { BRAND_GOLD, BRAND_GREEN_DARK, PAGE_BG } from "@/theme";
 
 /**
- * Split-screen auth layout: form on the left, artwork on the right.
+ * Split-screen auth layout: form on the left, deep-green brand rail on the right.
  *
- * Replaces the original LoginPage's inline CSS background, which pulled a
- * bundled image through styled-components.
+ * The right panel is the school's own brand moment — the crest, the school name
+ * in Fraunces and one line in the school's own words, over the deep green, with
+ * a faint gold "Lucky Star" star watermark. No borrowed orb. Hidden on mobile.
  */
 export default function AuthShell({
   title,
@@ -28,6 +30,7 @@ export default function AuthShell({
         display: "grid",
         gridTemplateColumns: { xs: "1fr", md: "minmax(380px, 5fr) 7fr" },
         minHeight: "100vh",
+        backgroundColor: "background.default",
       }}
     >
       <Box
@@ -47,7 +50,7 @@ export default function AuthShell({
             p: { xs: 3, sm: 4 },
             border: "1px solid",
             borderColor: "divider",
-            borderRadius: 3,
+            borderRadius: "24px",
           }}
         >
           <SchoolLogo priority sizes="80px" sx={{ height: 64, mb: 2.5 }} />
@@ -72,13 +75,56 @@ export default function AuthShell({
 
       <Box
         sx={{
-          display: { xs: "none", md: "block" },
-          backgroundImage: "url(/designlogin.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: "secondary.main",
+          position: "relative",
+          overflow: "hidden",
+          display: { xs: "none", md: "flex" },
+          flexDirection: "column",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          p: { md: 6, lg: 8 },
+          backgroundColor: BRAND_GREEN_DARK,
         }}
-      />
+      >
+        {/* Faint gold star watermark, low enough contrast to stay calm. */}
+        <Box
+          aria-hidden
+          sx={{
+            position: "absolute",
+            top: "10%",
+            right: "12%",
+            width: 200,
+            height: 200,
+            color: BRAND_GOLD,
+            opacity: 0.1,
+            pointerEvents: "none",
+          }}
+        >
+          <svg width="100%" height="100%" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l2.9 6.26 6.9.7-5.15 4.6 1.45 6.74L12 16.9 5.9 20.3l1.45-6.74L2.2 8.96l6.9-.7z" />
+          </svg>
+        </Box>
+
+        <SchoolLogo
+          decorative
+          sizes="160px"
+          sx={{ height: 96, mb: 3, position: "relative", zIndex: 1 }}
+        />
+
+        <Typography
+          variant="h3"
+          sx={{ mb: 2, color: PAGE_BG, position: "relative", zIndex: 1 }}
+        >
+          Lucky Star Academy, Yendi
+        </Typography>
+
+        <Typography
+          variant="body1"
+          sx={{ color: PAGE_BG, opacity: 0.82, maxWidth: 380, position: "relative", zIndex: 1 }}
+        >
+          One place for our office, teachers and families to share attendance,
+          results and notices.
+        </Typography>
+      </Box>
     </Box>
   );
 }

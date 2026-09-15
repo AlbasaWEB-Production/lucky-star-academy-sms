@@ -54,8 +54,8 @@ export const INK_MUTED = "#6B6B6B";
 export const SURFACE_MUTED = "#F0F0EE";
 
 /** Typefaces, referenced via the CSS variables set on <html> in `layout.tsx`. */
-const DISPLAY_FONT = "var(--font-fraunces)";
-const TEXT_FONT = "var(--font-hanken)";
+export const DISPLAY_FONT = "var(--font-fraunces)";
+export const TEXT_FONT = "var(--font-hanken)";
 
 /** Fraunces is a variable font; SOFT up for warmth, WONK off for steady letterforms. */
 const FRAUNCES_SETTINGS = '"SOFT" 100, "WONK" 0';
