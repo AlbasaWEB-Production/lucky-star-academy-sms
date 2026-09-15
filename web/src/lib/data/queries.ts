@@ -103,6 +103,7 @@ export type SubjectAttendanceSummary = {
 export type DashboardStats = {
   students: number;
   teachers: number;
+  admins: number;
   classes: number;
   subjects: number;
   notices: number;
@@ -390,6 +391,29 @@ export async function getTeacherById(teacherId: string): Promise<TeacherSummary 
   return all.find((teacher) => teacher.id === teacherId) ?? null;
 }
 
+export type AdminSummary = {
+  id: string;
+  fullName: string;
+  email: string | null;
+};
+
+/** Administrator profiles, read-only. RLS scopes to the caller's school. */
+export async function listAdmins(): Promise<AdminSummary[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .eq("role", "admin")
+    .order("full_name");
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    fullName: row.full_name,
+    email: row.email,
+  }));
+}
+
 /** The signed-in teacher's own assignments. */
 export async function getOwnTeacherAssignments(teacherId: string): Promise<TeacherAssignment[]> {
   const supabase = await createSupabaseServerClient();
@@ -506,6 +530,43 @@ export async function listExamResultsForStudent(studentId: string): Promise<Exam
   });
 }
 
+export type RecentExamResult = {
+  subjectId: string;
+  subjectName: string;
+  marksObtained: number;
+  recordedAt: string;
+};
+
+/** Exam results recorded since `since` (an ISO timestamp), newest first. */
+export async function listRecentExamResultsForStudent(
+  studentId: string,
+  since: string,
+): Promise<RecentExamResult[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: results } = await supabase
+    .from("exam_results")
+    .select("subject_id, marks_obtained, created_at")
+    .eq("student_id", studentId)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false });
+
+  if (!results || results.length === 0) {
+    return [];
+  }
+
+  const subjectIds = unique(results.map((row) => row.subject_id));
+  const { data: subjects } = await supabase.from("subjects").select("id, name").in("id", subjectIds);
+  const subjectNames = new Map((subjects ?? []).map((row) => [row.id, row.name]));
+
+  return results.map((row) => ({
+    subjectId: row.subject_id,
+    subjectName: subjectNames.get(row.subject_id) ?? "Unknown subject",
+    marksObtained: row.marks_obtained,
+    recordedAt: row.created_at,
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Attendance
 // ---------------------------------------------------------------------------
@@ -596,6 +657,203 @@ export async function listTeacherAttendance(teacherId: string): Promise<TeacherA
     date: row.date,
     presentCount: row.present_count,
     absentCount: row.absent_count,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Attendance coverage (dashboards)
+// ---------------------------------------------------------------------------
+
+export type AttendanceCoverage = {
+  classId: string;
+  className: string;
+  recordedCount: number;
+};
+
+/**
+ * Classes that have at least one attendance row on `date`, with a distinct
+ * student count per class (a student is counted once even when marked for
+ * more than one subject that day). Classes with no rows are absent from the
+ * result - the caller joins against `listClasses()` to surface the zero gap.
+ */
+export async function listAttendanceCoverageForDate(date: string): Promise<AttendanceCoverage[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: rows } = await supabase
+    .from("attendance")
+    .select("class_id, student_id")
+    .eq("date", date);
+
+  if (!rows || rows.length === 0) {
+    return [];
+  }
+
+  const classIds = unique(rows.map((row) => row.class_id));
+  const classNames = await classNamesByIds(classIds);
+
+  const studentsByClass = new Map<string, Set<string>>();
+  for (const row of rows) {
+    let set = studentsByClass.get(row.class_id);
+    if (!set) {
+      set = new Set();
+      studentsByClass.set(row.class_id, set);
+    }
+    set.add(row.student_id);
+  }
+
+  return classIds
+    .map((classId) => ({
+      classId,
+      className: classNames.get(classId) ?? "Unknown class",
+      recordedCount: studentsByClass.get(classId)?.size ?? 0,
+    }))
+    .sort((a, b) => a.className.localeCompare(b.className));
+}
+
+/**
+ * Same shape as `listAttendanceCoverageForDate`, but restricted to the
+ * classes the teacher teaches. Every one of the teacher's classes is returned,
+ * including those with zero students marked today, so the zero values read as
+ * the remaining to-do list.
+ */
+export async function listAttendanceCoverageForTeacher(
+  teacherId: string,
+  date: string,
+): Promise<AttendanceCoverage[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: subjects } = await supabase
+    .from("subjects")
+    .select("id, class_id")
+    .eq("teacher_id", teacherId);
+
+  if (!subjects || subjects.length === 0) {
+    return [];
+  }
+
+  const subjectIds = subjects.map((row) => row.id);
+  const classIds = unique(subjects.map((row) => row.class_id));
+  const classNames = await classNamesByIds(classIds);
+
+  const { data: rows } = await supabase
+    .from("attendance")
+    .select("class_id, student_id")
+    .eq("date", date)
+    .in("subject_id", subjectIds);
+
+  const studentsByClass = new Map<string, Set<string>>();
+  for (const row of rows ?? []) {
+    let set = studentsByClass.get(row.class_id);
+    if (!set) {
+      set = new Set();
+      studentsByClass.set(row.class_id, set);
+    }
+    set.add(row.student_id);
+  }
+
+  return classIds
+    .map((classId) => ({
+      classId,
+      className: classNames.get(classId) ?? "Unknown class",
+      recordedCount: studentsByClass.get(classId)?.size ?? 0,
+    }))
+    .sort((a, b) => a.className.localeCompare(b.className));
+}
+
+export type ClassAttendanceSummary = {
+  classId: string;
+  className: string;
+  present: number;
+  absent: number;
+  percentage: number;
+};
+
+/** Present/absent totals per class across the teacher's subjects. */
+export async function summariseClassAttendanceForTeacher(
+  teacherId: string,
+): Promise<ClassAttendanceSummary[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: subjects } = await supabase
+    .from("subjects")
+    .select("id, class_id")
+    .eq("teacher_id", teacherId);
+
+  if (!subjects || subjects.length === 0) {
+    return [];
+  }
+
+  const subjectIds = subjects.map((row) => row.id);
+  const classIds = unique(subjects.map((row) => row.class_id));
+  const classNames = await classNamesByIds(classIds);
+
+  const { data: rows } = await supabase
+    .from("attendance")
+    .select("class_id, status")
+    .in("subject_id", subjectIds);
+
+  const byClass = new Map<string, { present: number; absent: number }>();
+  for (const row of rows ?? []) {
+    const entry = byClass.get(row.class_id) ?? { present: 0, absent: 0 };
+    if (row.status === "Present") {
+      entry.present += 1;
+    } else {
+      entry.absent += 1;
+    }
+    byClass.set(row.class_id, entry);
+  }
+
+  return classIds.map((classId) => {
+    const entry = byClass.get(classId) ?? { present: 0, absent: 0 };
+    const total = entry.present + entry.absent;
+    return {
+      classId,
+      className: classNames.get(classId) ?? "Unknown class",
+      present: entry.present,
+      absent: entry.absent,
+      percentage: total > 0 ? Math.round((entry.present / total) * 1000) / 10 : 0,
+    };
+  });
+}
+
+export type MarksBySubjectSummary = {
+  subjectId: string;
+  subjectName: string;
+  count: number;
+};
+
+/** Number of `exam_results` rows per subject the teacher teaches. */
+export async function countMarksBySubjectForTeacher(
+  teacherId: string,
+): Promise<MarksBySubjectSummary[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: subjects } = await supabase
+    .from("subjects")
+    .select("id, name")
+    .eq("teacher_id", teacherId);
+
+  if (!subjects || subjects.length === 0) {
+    return [];
+  }
+
+  const subjectIds = subjects.map((row) => row.id);
+  const subjectById = new Map(subjects.map((row) => [row.id, row.name]));
+
+  const { data: rows } = await supabase
+    .from("exam_results")
+    .select("subject_id")
+    .in("subject_id", subjectIds);
+
+  const countBySubject = new Map<string, number>();
+  for (const row of rows ?? []) {
+    countBySubject.set(row.subject_id, (countBySubject.get(row.subject_id) ?? 0) + 1);
+  }
+
+  return subjectIds.map((subjectId) => ({
+    subjectId,
+    subjectName: subjectById.get(subjectId) ?? "Unknown subject",
+    count: countBySubject.get(subjectId) ?? 0,
   }));
 }
 
@@ -690,14 +948,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     return count ?? 0;
   };
 
-  const [students, teachers, classes, subjects, notices, complaints] = await Promise.all([
+  const [students, teachers, admins, classes, subjects, notices, complaints] = await Promise.all([
     countOf("students"),
     countOf("profiles", { column: "role", value: "teacher" }),
+    countOf("profiles", { column: "role", value: "admin" }),
     countOf("classes"),
     countOf("subjects"),
     countOf("notices"),
     countOf("complaints"),
   ]);
 
-  return { students, teachers, classes, subjects, notices, complaints };
+  return { students, teachers, admins, classes, subjects, notices, complaints };
 }
