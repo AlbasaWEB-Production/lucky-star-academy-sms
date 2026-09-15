@@ -160,6 +160,7 @@ so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
 | `@/components/charts/QuestionBarChart` | `{ data: {name, value}[], question, unit?, color?, height?, horizontal? }` — a single-series bar chart that answers one question; `question` is the `aria-label` and tooltip title, `unit` is appended to the axis and labels, `horizontal` gives a per-category comparison |
 | `@/components/charts/PeopleBreakdown` | `{ students, teachers, admins, height? }` — three-bar horizontal comparison; administrators are always the third group |
 | `@/components/charts/tokens` | `CHART_COLORS` — the shared ordered series palette (`#147B45`, `#083E28`, `#F2B705`, `#3D9C6A`, `#6B8F7A`). Every chart imports from here; never hard-code a series colour |
+| `@/components/ui/SearchBar` | `{ placeholder, initialQuery? }` — client filter box for list pages; writes `?q=` to the URL and leaves the actual filtering to the server page (see "Searching a list") |
 | `@/components/NextLink` | `next/link` wrapper; required for MUI `component={Link}` |
 
 `TableShell` takes `isEmpty` explicitly — do not rely on it inferring
@@ -250,6 +251,42 @@ new one.
 - Administrators are a third group wherever people are counted or broken down
   (the `admins` stat, `PeopleBreakdown`, and the `/admin/admins` page). The
   administrators page is read-only — no add/delete controls.
+
+## Searching a list
+
+Every list page carries a `SearchBar`, and the **filtering itself stays on the
+server**. The URL is the state:
+
+```tsx
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
+  const rows = await listX();                       // unchanged, still RLS-scoped
+  const filtered = query ? rows.filter(/* … */) : rows;
+
+  // PageHeader subtitle: query ? `Showing ${filtered.length} of ${rows.length} …` : original
+  // then <SearchBar placeholder="…" initialQuery={q} />, then the table from `filtered`
+  // emptyMessage: query && rows.length > 0 ? `Nothing matches “${q}”.` : original
+}
+```
+
+Rules that follow from that:
+
+- **The page stays a Server Component.** `SearchBar` is the only client part; it
+  writes `?q=` (debounced) and the server re-renders. No `"use client"` list, no
+  filter callback passed down, and no new query parameters reach Supabase —
+  matching is done in memory over the rows RLS already returned.
+- **Search matches the columns the table shows**, case-insensitively — usually
+  names, codes and classes. Numbers (roll number, counts) are matched through
+  `String(field)` so `string | number` columns typecheck.
+- **Three states, three messages.** Running total in the subtitle ("Showing 2 of
+  18 students."), the original empty message when the list is genuinely empty,
+  and `Nothing matches “…”` when a query filtered everything out.
+- On a page with more than one list (student subjects, attendance), filter every
+  list and the chart that is fed from it, so the page never contradicts itself.
+  Keep totals that describe the whole period — the attendance pie, for instance —
+  on the unfiltered numbers.
 
 ## Form pattern
 

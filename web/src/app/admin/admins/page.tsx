@@ -1,6 +1,7 @@
 import { TableCell, TableRow, Typography } from "@mui/material";
 
 import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 import TableShell from "@/components/ui/TableShell";
 import { listAdmins } from "@/lib/data/queries";
 
@@ -18,26 +19,52 @@ export const metadata = {
  * why the sidebar's "People" section lists Administrators alongside Students
  * and Teachers.
  */
-export default async function AdminsPage() {
+export default async function AdminsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
   const admins = await listAdmins();
 
-  const subtitle =
+  const filtered = query
+    ? admins.filter((admin) =>
+        [admin.fullName, admin.email].some((field) =>
+          (field ?? "").toLowerCase().includes(query),
+        ),
+      )
+    : admins;
+
+  const originalSubtitle =
     admins.length === 0
       ? "No administrators yet."
       : `${admins.length} administrator${admins.length === 1 ? "" : "s"} in your school.`;
+
+  const subtitle = query
+    ? `Showing ${filtered.length} of ${admins.length} administrator${admins.length === 1 ? "" : "s"}.`
+    : originalSubtitle;
+
+  const emptyMessage =
+    query && admins.length > 0
+      ? `Nothing matches “${q}”.`
+      : "No administrators yet. An administrator account is created when a school registers.";
 
   return (
     <>
       <PageHeader title="Administrators" subtitle={subtitle} />
 
+      <SearchBar placeholder="Search by name or email" initialQuery={q} />
+
       <TableShell
         headers={["Name", "Email"]}
         density="compact"
         columnAlign={["left", "left"]}
-        isEmpty={admins.length === 0}
-        emptyMessage="No administrators yet. An administrator account is created when a school registers."
+        isEmpty={filtered.length === 0}
+        emptyMessage={emptyMessage}
       >
-        {admins.map((admin) => (
+        {filtered.map((admin) => (
           <TableRow key={admin.id}>
             <TableCell>{admin.fullName}</TableCell>
             <TableCell>

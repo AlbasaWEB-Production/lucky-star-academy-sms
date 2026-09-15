@@ -3,6 +3,7 @@ import { Box, Button, TableCell, TableRow, Typography } from "@mui/material";
 
 import ConfirmActionButton from "@/components/ui/ConfirmActionButton";
 import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 import TableShell from "@/components/ui/TableShell";
 import { deleteStudentAction } from "@/lib/actions/roster";
 import { listClasses, listStudents } from "@/lib/data/queries";
@@ -11,13 +12,37 @@ export const metadata = {
   title: "Students",
 };
 
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
   const [students, classes] = await Promise.all([listStudents(), listClasses()]);
 
-  const subtitle =
+  const filtered = query
+    ? students.filter((student) =>
+        [String(student.rollNumber), student.fullName, student.className].some((field) =>
+          (field ?? "").toLowerCase().includes(query),
+        ),
+      )
+    : students;
+
+  const originalSubtitle =
     classes.length > 0
       ? `${students.length} student${students.length === 1 ? "" : "s"} across ${classes.length} class${classes.length === 1 ? "" : "es"}.`
       : `${students.length} student${students.length === 1 ? "" : "s"}.`;
+
+  const subtitle = query
+    ? `Showing ${filtered.length} of ${students.length} student${students.length === 1 ? "" : "s"}.`
+    : originalSubtitle;
+
+  const emptyMessage =
+    query && students.length > 0
+      ? `Nothing matches “${q}”.`
+      : "No students yet. Add your first student to get started.";
 
   return (
     <>
@@ -42,13 +67,15 @@ export default async function StudentsPage() {
         </Typography>
       ) : null}
 
+      <SearchBar placeholder="Search by roll number, name or class" initialQuery={q} />
+
       <TableShell
         headers={["Roll no.", "Name", "Class", "Actions"]}
         density="compact"
-        isEmpty={students.length === 0}
-        emptyMessage="No students yet. Add your first student to get started."
+        isEmpty={filtered.length === 0}
+        emptyMessage={emptyMessage}
       >
-        {students.map((student) => (
+        {filtered.map((student) => (
           <TableRow key={student.id}>
             <TableCell>{student.rollNumber}</TableCell>
             <TableCell>{student.fullName}</TableCell>

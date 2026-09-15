@@ -3,6 +3,7 @@ import { Box, Button, TableCell, TableRow } from "@mui/material";
 
 import ConfirmActionButton from "@/components/ui/ConfirmActionButton";
 import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 import TableShell from "@/components/ui/TableShell";
 import { deleteNoticeAction } from "@/lib/actions/content";
 import { listNotices } from "@/lib/data/queries";
@@ -17,13 +18,37 @@ export const metadata = {
  * `listNotices()` is RLS-scoped, so it needs no school filter here - an admin
  * reads their own school's notices.
  */
-export default async function NoticesPage() {
+export default async function NoticesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
   const notices = await listNotices();
 
-  const subtitle =
+  const filtered = query
+    ? notices.filter((notice) =>
+        [notice.title, notice.details].some((field) =>
+          (field ?? "").toLowerCase().includes(query),
+        ),
+      )
+    : notices;
+
+  const originalSubtitle =
     notices.length === 0
       ? "Notices you publish appear on every portal in your school."
       : `${notices.length} notice${notices.length === 1 ? "" : "s"}, newest first.`;
+
+  const subtitle = query
+    ? `Showing ${filtered.length} of ${notices.length} notice${notices.length === 1 ? "" : "s"}.`
+    : originalSubtitle;
+
+  const emptyMessage =
+    query && notices.length > 0
+      ? `Nothing matches “${q}”.`
+      : "No notices yet. Publish your first notice to reach every portal.";
 
   return (
     <>
@@ -37,13 +62,15 @@ export default async function NoticesPage() {
         }
       />
 
+      <SearchBar placeholder="Search by title or details" initialQuery={q} />
+
       <TableShell
         headers={["Title", "Date", "Details", "Actions"]}
         density="compact"
-        isEmpty={notices.length === 0}
-        emptyMessage="No notices yet. Publish your first notice to reach every portal."
+        isEmpty={filtered.length === 0}
+        emptyMessage={emptyMessage}
       >
-        {notices.map((notice) => (
+        {filtered.map((notice) => (
           <TableRow key={notice.id}>
             <TableCell>{notice.title}</TableCell>
             <TableCell>{new Date(notice.date).toLocaleDateString()}</TableCell>

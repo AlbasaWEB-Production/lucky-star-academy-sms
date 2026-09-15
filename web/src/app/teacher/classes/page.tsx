@@ -3,6 +3,7 @@ import { Button, TableCell, TableRow, Typography } from "@mui/material";
 
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 import TableShell from "@/components/ui/TableShell";
 import { requireRoleWithTenant } from "@/lib/auth/session";
 import { getOwnTeacherAssignments, listStudents } from "@/lib/data/queries";
@@ -28,7 +29,14 @@ type TaughtClass = {
  * `listStudents()` is RLS-scoped to those same classes, so the counts never
  * include a class the teacher does not teach.
  */
-export default async function TeacherClassesPage() {
+export default async function TeacherClassesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
   const session = await requireRoleWithTenant("teacher");
 
   const [assignments, students] = await Promise.all([
@@ -64,10 +72,29 @@ export default async function TeacherClassesPage() {
     .map((entry) => ({ ...entry, studentCount: studentCounts.get(entry.classId) ?? 0 }))
     .sort((a, b) => a.className.localeCompare(b.className));
 
-  const subtitle =
+  const filtered = query
+    ? taughtClasses.filter((entry) =>
+        [
+          entry.className,
+          entry.subjects.map((subject) => `${subject.name} ${subject.code}`).join(" "),
+          String(entry.studentCount),
+        ].some((field) => field.toLowerCase().includes(query)),
+      )
+    : taughtClasses;
+
+  const originalSubtitle =
     taughtClasses.length > 0
       ? `${assignments.length} subject${assignments.length === 1 ? "" : "s"} across ${taughtClasses.length} class${taughtClasses.length === 1 ? "" : "es"}.`
       : "No classes are assigned to you yet.";
+
+  const subtitle = query
+    ? `Showing ${filtered.length} of ${taughtClasses.length} class${taughtClasses.length === 1 ? "" : "es"}.`
+    : originalSubtitle;
+
+  const emptyMessage =
+    query && taughtClasses.length > 0
+      ? `Nothing matches “${q}”.`
+      : "You do not teach any classes yet.";
 
   return (
     <>
@@ -79,39 +106,43 @@ export default async function TeacherClassesPage() {
           description="An administrator assigns subjects to teachers. Once a subject of yours belongs to a class, that class appears here with its roster."
         />
       ) : (
-        <TableShell
-          headers={["Class", "Subjects you teach", "Students", ""]}
-          density="compact"
-          columnAlign={["left", "left", "right", "left"]}
-          isEmpty={false}
-          emptyMessage="You do not teach any classes yet."
-        >
-          {taughtClasses.map((entry) => (
-            <TableRow key={entry.classId}>
-              <TableCell>{entry.className}</TableCell>
-              <TableCell>
-                {entry.subjects.map((subject) => (
-                  <Typography key={subject.id} variant="body2">
-                    {subject.name} ({subject.code})
-                  </Typography>
-                ))}
-              </TableCell>
-              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
-                {entry.studentCount}
-              </TableCell>
-              <TableCell>
-                <Button
-                  component={Link}
-                  href={`/teacher/classes/${entry.classId}`}
-                  size="small"
-                  variant="outlined"
-                >
-                  View
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableShell>
+        <>
+          <SearchBar placeholder="Search by class or subject" initialQuery={q} />
+
+          <TableShell
+            headers={["Class", "Subjects you teach", "Students", ""]}
+            density="compact"
+            columnAlign={["left", "left", "right", "left"]}
+            isEmpty={filtered.length === 0}
+            emptyMessage={emptyMessage}
+          >
+            {filtered.map((entry) => (
+              <TableRow key={entry.classId}>
+                <TableCell>{entry.className}</TableCell>
+                <TableCell>
+                  {entry.subjects.map((subject) => (
+                    <Typography key={subject.id} variant="body2">
+                      {subject.name} ({subject.code})
+                    </Typography>
+                  ))}
+                </TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {entry.studentCount}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    component={Link}
+                    href={`/teacher/classes/${entry.classId}`}
+                    size="small"
+                    variant="outlined"
+                  >
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableShell>
+        </>
       )}
     </>
   );

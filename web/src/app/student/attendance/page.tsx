@@ -3,6 +3,7 @@ import { Box, Paper, TableCell, TableRow, Typography } from "@mui/material";
 import AttendancePieChart from "@/components/charts/AttendancePieChart";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 import TableShell from "@/components/ui/TableShell";
 import { requireRoleWithTenant } from "@/lib/auth/session";
 import {
@@ -32,7 +33,14 @@ const RECORD_LIMIT = 50;
  * replaced the browser-side `attendanceCalculator.js` from the legacy app and
  * returns the per-subject totals already.
  */
-export default async function StudentAttendancePage() {
+export default async function StudentAttendancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q = "" } = await searchParams;
+  const query = q.trim().toLowerCase();
+
   const session = await requireRoleWithTenant("student");
   const student = await getOwnStudentRecord(session.id);
 
@@ -53,12 +61,40 @@ export default async function StudentAttendancePage() {
     listAttendanceForStudent(session.id),
   ]);
 
+  const filteredSummary = query
+    ? summary.filter((entry) => entry.subjectName.toLowerCase().includes(query))
+    : summary;
+
+  const searchedRecords = query
+    ? records.filter((record) =>
+        [record.subjectName, record.status].some((field) =>
+          (field ?? "").toLowerCase().includes(query),
+        ),
+      )
+    : records;
+
+  const recentRecords = searchedRecords.slice(0, RECORD_LIMIT);
+
   const present = summary.reduce((total, entry) => total + entry.present, 0);
   const absent = summary.reduce((total, entry) => total + entry.absent, 0);
   const recorded = present + absent;
   const overallPercentage = recorded > 0 ? Math.round((present / recorded) * 1000) / 10 : 0;
 
-  const recentRecords = records.slice(0, RECORD_LIMIT);
+  const summaryEmptyMessage =
+    query && summary.length > 0
+      ? `Nothing matches “${q}”.`
+      : "No attendance has been recorded for you yet.";
+
+  const recordsCaption = query
+    ? `${recentRecords.length} matching record${recentRecords.length === 1 ? "" : "s"}, newest first.`
+    : records.length > RECORD_LIMIT
+      ? `The ${RECORD_LIMIT} most recent of ${records.length} records, newest first.`
+      : `${records.length} record${records.length === 1 ? "" : "s"}, newest first.`;
+
+  const recordsEmptyMessage =
+    query && records.length > 0
+      ? `Nothing matches “${q}”.`
+      : "No attendance records yet.";
 
   return (
     <>
@@ -70,6 +106,8 @@ export default async function StudentAttendancePage() {
             : "No attendance has been recorded for you yet."
         }
       />
+
+      <SearchBar placeholder="Search by subject or status" initialQuery={q} />
 
       <Box
         sx={{
@@ -101,10 +139,10 @@ export default async function StudentAttendancePage() {
           <TableShell
             headers={["Subject", "Present", "Absent", "Total", "Attendance"]}
             columnAlign={["left", "right", "right", "right", "right"]}
-            isEmpty={summary.length === 0}
-            emptyMessage="No attendance has been recorded for you yet."
+            isEmpty={filteredSummary.length === 0}
+            emptyMessage={summaryEmptyMessage}
           >
-            {summary.map((entry) => (
+            {filteredSummary.map((entry) => (
               <TableRow key={entry.subjectId}>
                 <TableCell>{entry.subjectName}</TableCell>
                 <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
@@ -129,15 +167,13 @@ export default async function StudentAttendancePage() {
         Recent records
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {records.length > RECORD_LIMIT
-          ? `The ${RECORD_LIMIT} most recent of ${records.length} records, newest first.`
-          : `${records.length} record${records.length === 1 ? "" : "s"}, newest first.`}
+        {recordsCaption}
       </Typography>
 
       <TableShell
         headers={["Date", "Subject", "Status"]}
         isEmpty={recentRecords.length === 0}
-        emptyMessage="No attendance records yet."
+        emptyMessage={recordsEmptyMessage}
       >
         {recentRecords.map((record) => (
           <TableRow key={record.id}>

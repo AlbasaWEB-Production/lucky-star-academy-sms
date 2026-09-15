@@ -34,6 +34,7 @@ import EventNoteIcon from "@mui/icons-material/EventNote";
 import GradingIcon from "@mui/icons-material/Grading";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 import SchoolLogo from "@/components/ui/SchoolLogo";
 import SiteFooter from "@/components/ui/SiteFooter";
@@ -187,6 +188,41 @@ export default function AppShell({
             </List>
           </Box>
         ))}
+      </Box>
+
+      <form action={signOutAction}>
+        <ListItemButton
+          component="button"
+          type="submit"
+          sx={{ mx: 1.5, my: 0.25, borderRadius: 999, px: 1.5 }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.secondary", fontSize: 20 }}>
+            <LogoutIcon fontSize="inherit" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Sign out"
+            slotProps={{ primary: { variant: "body2", sx: { fontWeight: 500 } } }}
+          />
+        </ListItemButton>
+      </form>
+
+      <Box component="footer" sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
+        <Divider sx={{ mb: 1.5 }} />
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", textAlign: "center" }}
+        >
+          Designed &amp; Developed by{" "}
+          <Link
+            href="https://albasaweb.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "inherit", fontWeight: 600 }}
+          >
+            AlbasaWEB
+          </Link>
+        </Typography>
       </Box>
     </Box>
   );
