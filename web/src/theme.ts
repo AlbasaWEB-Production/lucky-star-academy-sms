@@ -3,43 +3,61 @@
 import { createTheme } from "@mui/material/styles";
 
 /**
- * Theme ported from the legacy app.
+ * Lucky Star Academy theme.
  *
- * The purple palette and the 240px drawer width come from the original
- * `frontend/src/components/buttonStyles.js` and `styles.js`, so the redesign
- * keeps the familiar look.
+ * Replaces the purple palette inherited from the legacy MERN app with the
+ * school's own colours, taken from the admission flyer and the crest: a deep
+ * grass green as the working colour and the crest's gold as an accent.
  *
- * Structural changes from the old styled-components approach:
- *   - The button variants are now real theme variants (`variant="contained"`
- *     with a `color`), instead of nine near-identical styled() wrappers.
- *   - Layout uses Box/Stack + CSS grid rather than MUI's Grid component,
- *     whose prop API has changed across MUI majors.
+ * Two deliberate choices worth knowing before you change anything here:
+ *
+ *   - `secondary` is a very dark green rather than the gold. Across the app
+ *     `secondary.main` is used as an ink colour for headings and for the text
+ *     on the white hero button, so it has to stay dark enough to read on
+ *     white. Swapping gold in there would drop those to about 1.9:1 against
+ *     the page and fail contrast everywhere at once.
+ *   - The gold is therefore exported as a constant instead, for use as a
+ *     border, underline or filled chip with dark text on top. It is a
+ *     background colour, never a text colour on white.
+ *
+ * Structural notes carried over from the original port: button variants are
+ * real theme variants rather than styled() wrappers, and layout uses Box and
+ * CSS grid rather than MUI's Grid, whose prop API churns across majors.
  */
 
 export const DRAWER_WIDTH = 240;
+
+/** Crest gold. Use as a fill or rule, with dark text over it — never as text on white. */
+export const BRAND_GOLD = "#F2B705";
+
+/** The deep green the landing hero's scrim is built from. */
+export const BRAND_GREEN_DARK = "#083E28";
 
 const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#7f56da",
-      dark: "#5c33b8",
-      light: "#a480e6",
+      main: "#147B45",
+      dark: "#0B5E33",
+      light: "#4CA76F",
     },
     secondary: {
-      main: "#270843",
+      main: BRAND_GREEN_DARK,
     },
     success: {
-      main: "#266810",
+      main: "#2E7D32",
     },
     error: {
-      main: "#c62828",
+      main: "#C62828",
+    },
+    warning: {
+      main: "#B26A00",
     },
     info: {
-      main: "#080a43",
+      main: "#0B5E33",
     },
     background: {
-      default: "#f7f7fb",
+      default: "#F6F8F6",
       paper: "#ffffff",
     },
   },
@@ -81,7 +99,8 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         head: {
-          backgroundColor: "#000000",
+          // Was pure black, which read as a bar of ink across every table.
+          backgroundColor: BRAND_GREEN_DARK,
           color: "#ffffff",
           fontWeight: 600,
         },
@@ -94,7 +113,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "&:nth-of-type(odd)": {
-            backgroundColor: "rgba(127, 86, 218, 0.04)",
+            backgroundColor: "rgba(20, 123, 69, 0.04)",
           },
           "&:last-child td, &:last-child th": {
             border: 0,

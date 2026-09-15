@@ -5,21 +5,15 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
-  FormControlLabel,
   MenuItem,
   Paper,
-  Radio,
-  RadioGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 import {
   fetchSubjectAttendanceAction,
@@ -52,6 +46,14 @@ type Status = "Present" | "Absent";
  * and pre-selected, which makes correcting a mistake a re-submit rather than a
  * duplicate - the table has a unique (student, subject, date) constraint and
  * the action upserts.
+ *
+ * The roster is a grid of one tile per pupil rather than a table of radio
+ * pairs. Taking a register is a bulk operation with a lopsided distribution -
+ * on a normal day everyone is present and a handful are not - so the default
+ * is Present for all and the interaction is tapping the few who are absent.
+ * That is two taps for a class of forty instead of forty. The bulk buttons and
+ * Save live in a bar pinned to the bottom of the viewport, so they stay
+ * reachable without scrolling back up a long class list.
  */
 export default function AttendanceMarker({
   subjects,
@@ -135,12 +137,24 @@ export default function AttendanceMarker({
     })),
   );
 
+  const presentCount = roster.filter(
+    (student) => (statuses[student.id] ?? "Present") === "Present",
+  ).length;
+  const absentCount = roster.length - presentCount;
+
   const setAll = (status: Status) => {
     const next: Record<string, Status> = {};
     for (const student of roster) {
       next[student.id] = status;
     }
     setStatuses(next);
+  };
+
+  const toggle = (studentId: string) => {
+    setStatuses((current) => ({
+      ...current,
+      [studentId]: (current[studentId] ?? "Present") === "Present" ? "Absent" : "Present",
+    }));
   };
 
   if (subjects.length === 0) {
@@ -186,7 +200,8 @@ export default function AttendanceMarker({
 
         {subject ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            {roster.length} student{roster.length === 1 ? "" : "s"} in {subject.className}.
+            {roster.length} student{roster.length === 1 ? "" : "s"} in {subject.className}. Tap a
+            pupil to mark them absent.
           </Typography>
         ) : (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -207,65 +222,124 @@ export default function AttendanceMarker({
           <input type="hidden" name="date" value={date} />
           <input type="hidden" name="entries" value={entries} />
 
-          <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-            <Button size="small" variant="outlined" onClick={() => setAll("Present")}>
-              Mark all present
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => setAll("Absent")}>
-              Mark all absent
-            </Button>
-          </Box>
+          {isLoading ? (
+            <Paper variant="outlined" sx={{ py: 6, display: "grid", placeItems: "center" }}>
+              <CircularProgress size={26} />
+            </Paper>
+          ) : roster.length === 0 ? (
+            <Paper variant="outlined" sx={{ py: 6, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                This class has no students yet.
+              </Typography>
+            </Paper>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1.5,
+                gridTemplateColumns: {
+                  xs: "repeat(2, 1fr)",
+                  sm: "repeat(3, 1fr)",
+                  md: "repeat(4, 1fr)",
+                  lg: "repeat(5, 1fr)",
+                },
+              }}
+            >
+              {roster.map((student) => {
+                const status = statuses[student.id] ?? "Present";
+                const isPresent = status === "Present";
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Roll no.</TableCell>
-                  <TableCell>Student</TableCell>
-                  <TableCell>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} sx={{ py: 4, textAlign: "center" }}>
-                      <CircularProgress size={22} />
-                    </TableCell>
-                  </TableRow>
-                ) : roster.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} sx={{ py: 4, textAlign: "center" }}>
-                      <Typography variant="body2" color="text.secondary">
-                        This class has no students yet.
+                return (
+                  <Box
+                    key={student.id}
+                    component="button"
+                    type="button"
+                    onClick={() => toggle(student.id)}
+                    aria-pressed={!isPresent}
+                    aria-label={`${student.fullName}, roll number ${student.rollNumber}, currently ${status.toLowerCase()}. Activate to mark ${isPresent ? "absent" : "present"}.`}
+                    sx={{
+                      appearance: "none",
+                      font: "inherit",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      p: 2,
+                      borderRadius: 2,
+                      border: "2px solid",
+                      borderColor: isPresent ? "success.main" : "error.main",
+                      backgroundColor: isPresent
+                        ? "rgba(46, 125, 50, 0.08)"
+                        : "rgba(198, 40, 40, 0.08)",
+                      transition: "border-color 120ms ease, background-color 120ms ease",
+                      "&:hover": {
+                        backgroundColor: isPresent
+                          ? "rgba(46, 125, 50, 0.16)"
+                          : "rgba(198, 40, 40, 0.16)",
+                      },
+                      "&:focus-visible": {
+                        outline: "3px solid",
+                        outlineColor: "primary.main",
+                        outlineOffset: 2,
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        mx: "auto",
+                        mb: 1,
+                        borderRadius: "50%",
+                        display: "grid",
+                        placeItems: "center",
+                        fontWeight: 700,
+                        fontSize: 16,
+                        color: "#fff",
+                        backgroundColor: isPresent ? "success.main" : "error.main",
+                      }}
+                    >
+                      {initials(student.fullName)}
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        lineHeight: 1.25,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {student.fullName}
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      Roll {student.rollNumber}
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        mt: 0.75,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        color: isPresent ? "success.main" : "error.main",
+                      }}
+                    >
+                      {isPresent ? (
+                        <CheckCircleIcon sx={{ fontSize: 16 }} />
+                      ) : (
+                        <CancelIcon sx={{ fontSize: 16 }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                        {status}
                       </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  roster.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>{student.rollNumber}</TableCell>
-                      <TableCell>{student.fullName}</TableCell>
-                      <TableCell>
-                        <RadioGroup
-                          row
-                          value={statuses[student.id] ?? "Present"}
-                          onChange={(event) =>
-                            setStatuses((current) => ({
-                              ...current,
-                              [student.id]: event.target.value as Status,
-                            }))
-                          }
-                        >
-                          <FormControlLabel value="Present" control={<Radio size="small" />} label="Present" />
-                          <FormControlLabel value="Absent" control={<Radio size="small" />} label="Absent" />
-                        </RadioGroup>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
 
           {state.error ? (
             <Alert severity="error" sx={{ mt: 2 }}>
@@ -279,17 +353,79 @@ export default function AttendanceMarker({
             </Alert>
           ) : null}
 
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isPending || roster.length === 0}
-            sx={{ mt: 3 }}
+          {/*
+            Pinned to the bottom of the viewport so the register stays
+            submittable from anywhere in a long class list. `type="button"` on
+            the bulk actions is load-bearing: a <button> inside a <form>
+            defaults to type="submit", so without it these posted the register
+            instead of setting the statuses.
+          */}
+          <Paper
+            variant="outlined"
+            sx={{
+              position: "sticky",
+              bottom: 0,
+              zIndex: 2,
+              mt: 3,
+              p: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1.5,
+              backgroundColor: "background.paper",
+              boxShadow: "0 -6px 18px rgba(8, 62, 40, 0.08)",
+            }}
           >
-            {isPending ? <CircularProgress size={24} color="inherit" /> : "Save attendance"}
-          </Button>
+            <Button
+              type="button"
+              size="small"
+              variant="outlined"
+              color="success"
+              disabled={roster.length === 0}
+              onClick={() => setAll("Present")}
+            >
+              Mark all present
+            </Button>
+            <Button
+              type="button"
+              size="small"
+              variant="outlined"
+              color="error"
+              disabled={roster.length === 0}
+              onClick={() => setAll("Absent")}
+            >
+              Mark all absent
+            </Button>
+
+            <Box sx={{ display: "flex", gap: 1, ml: { sm: 1 } }}>
+              <Chip size="small" color="success" variant="outlined" label={`${presentCount} present`} />
+              <Chip size="small" color="error" variant="outlined" label={`${absentCount} absent`} />
+            </Box>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isPending || roster.length === 0}
+              sx={{ minWidth: 168 }}
+            >
+              {isPending ? <CircularProgress size={22} color="inherit" /> : "Save attendance"}
+            </Button>
+          </Paper>
         </Box>
       ) : null}
     </Box>
   );
+}
+
+/** First letters of the first and last name parts, e.g. "Abdul Rahman Musah" -> "AM". */
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "?";
+  }
+  const first = parts[0]!.charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
+  return (first + last).toUpperCase();
 }

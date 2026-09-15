@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance screen preview — Lucky Star Academy</title>
+<style>
+  :root{
+    --green:#147B45; --green-dark:#0B5E33; --ink:#083E28;
+    --success:#2E7D32; --error:#C62828; --gold:#F2B705;
+    --bg:#F6F8F6; --paper:#fff; --line:rgba(0,0,0,.14); --muted:#5b6b62;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:#1a1a1a;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 0}
+  .note{background:#fff8e1;border:1px solid var(--gold);border-radius:8px;
+    padding:12px 14px;margin-bottom:20px;color:#5c4600}
+  h1{font-size:20px;margin:0 0 4px;color:var(--ink)}
+  .sub{color:var(--muted);margin:0 0 20px}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px}
+  .fields{display:grid;gap:16px;grid-template-columns:2fr 1fr}
+  @media(max-width:600px){.fields{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  select,input[type=date]{width:100%;padding:10px;border:1px solid var(--line);
+    border-radius:8px;font:inherit;background:#fff}
+  .hint{color:var(--muted);margin:16px 0 0}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:800px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .tile{appearance:none;font:inherit;text-align:center;cursor:pointer;padding:16px 10px;
+    border-radius:12px;border:2px solid var(--success);
+    background:rgba(46,125,50,.08);transition:background-color .12s,border-color .12s}
+  .tile:hover{background:rgba(46,125,50,.16)}
+  .tile:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+  .tile[aria-pressed="true"]{border-color:var(--error);background:rgba(198,40,40,.08)}
+  .tile[aria-pressed="true"]:hover{background:rgba(198,40,40,.16)}
+  .av{width:48px;height:48px;margin:0 auto 8px;border-radius:50%;display:grid;
+    place-items:center;font-weight:700;font-size:16px;color:#fff;background:var(--success)}
+  .tile[aria-pressed="true"] .av{background:var(--error)}
+  .nm{font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rl{font-size:12px;color:var(--muted);display:block}
+  .st{margin-top:6px;font-size:12px;font-weight:700;color:var(--success)}
+  .tile[aria-pressed="true"] .st{color:var(--error)}
+  .bar{position:sticky;bottom:0;z-index:2;margin-top:24px;padding:16px;
+    background:var(--paper);border:1px solid var(--line);border-radius:8px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+    box-shadow:0 -6px 18px rgba(8,62,40,.08)}
+  button{font:inherit;font-weight:600;border-radius:8px;cursor:pointer}
+  .btn-o{padding:6px 14px;background:#fff;border:1px solid currentColor}
+  .ok{color:var(--success)} .no{color:var(--error)}
+  .chip{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;
+    border:1px solid currentColor;background:#fff}
+  .save{margin-left:auto;padding:10px 24px;min-width:168px;background:var(--green);
+    color:#fff;border:none}
+  .save:hover{background:var(--green-dark)}
+  .spacer{height:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note">
+    Static preview of the rebuilt attendance screen, with sample pupils. The real one lives at
+    <strong>/teacher/attendance</strong> and needs a sign-in. Click any tile to flip it.
+  </div>
+
+  <h1>Take attendance</h1>
+  <p class="sub">Record who is present for a subject on a given day.</p>
+
+  <div class="panel">
+    <div class="fields">
+      <div>
+        <label for="subj">Subject</label>
+        <select id="subj"><option>Mathematics - Primary 4</option></select>
+      </div>
+      <div>
+        <label for="dt">Date</label>
+        <input id="dt" type="date" value="2026-09-15">
+      </div>
+    </div>
+    <p class="hint">16 students in Primary 4. Tap a pupil to mark them absent.</p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="bar">
+    <button class="btn-o ok" id="allIn">Mark all present</button>
+    <button class="btn-o no" id="allOut">Mark all absent</button>
+    <span class="chip ok" id="cIn">16 present</span>
+    <span class="chip no" id="cOut">0 absent</span>
+    <button class="save">Save attendance</button>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<script>
+const PUPILS = [
+  "Abdul-Rahman Musah","Fatima Alhassan","Iddrisu Yakubu","Mariam Seidu",
+  "Sulemana Abu","Zainab Mahama","Osman Ibrahim","Hawa Adam",
+  "Yakubu Salifu","Rukaya Mohammed","Alhassan Braimah","Amina Issah",
+  "Mumuni Tahiru","Ayisha Fuseini","Baba Zakaria","Safia Abdulai"
+];
+const state = PUPILS.map(() => true);
+const grid = document.getElementById("grid");
+
+function initials(n){
+  const p = n.trim().split(/\s+/);
+  return (p[0][0] + (p.length>1 ? p[p.length-1][0] : "")).toUpperCase();
+}
+function counts(){
+  const present = state.filter(Boolean).length;
+  document.getElementById("cIn").textContent = present + " present";
+  document.getElementById("cOut").textContent = (state.length-present) + " absent";
+}
+function render(){
+  grid.innerHTML = "";
+  PUPILS.forEach((name,i)=>{
+    const b = document.createElement("button");
+    b.className = "tile"; b.type = "button";
+    b.setAttribute("aria-pressed", String(!state[i]));
+    b.setAttribute("aria-label", name + ", roll number " + (i+1) +
+      ", currently " + (state[i] ? "present" : "absent"));
+    b.innerHTML = '<div class="av">'+initials(name)+'</div>'+
+      '<div class="nm">'+name+'</div>'+
+      '<span class="rl">Roll '+(i+1)+'</span>'+
+      '<div class="st">'+(state[i]?"Present":"Absent")+'</div>';
+    b.onclick = ()=>{ state[i] = !state[i]; render(); counts(); };
+    grid.appendChild(b);
+  });
+}
+document.getElementById("allIn").onclick = ()=>{ state.fill(true); render(); counts(); };
+document.getElementById("allOut").onclick = ()=>{ state.fill(false); render(); counts(); };
+render(); counts();
+</script>
+</body>
+</html>
