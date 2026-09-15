@@ -68,11 +68,53 @@ the actual enforcement.
 `getSchool`, `listClasses`, `getClassById`, `listStudents`,
 `listStudentsByClass`, `getStudentById`, `listSubjects`, `listSubjectsByClass`,
 `listUnassignedSubjects`, `getSubjectById`, `listTeachers`, `getTeacherById`,
-`getOwnTeacherAssignments`, `listNotices`, `getNoticeById`, `listComplaints`,
-`listExamResultsForStudent`, `listAttendanceForStudent`,
+`getOwnTeacherAssignments`, `listAdmins`, `listNotices`, `getNoticeById`,
+`listComplaints`, `listExamResultsForStudent`, `listAttendanceForStudent`,
 `summariseAttendanceForStudent`, `listTeacherAttendance`, `getDashboardStats`.
 
+Dashboard / header helpers:
+
+- `getDashboardStats()` now also returns `admins` (the `profiles` count where
+  `role='admin'`), so the school's people are counted as one family.
+- `listAttendanceCoverageForDate(date)` — `{ classId, className, recordedCount }[]`
+  for the classes that have at least one attendance row on `date` (distinct
+  student per class). Join against `listClasses()` to surface the classes at
+  zero, which are the actionable gap.
+- `listAttendanceCoverageForTeacher(teacherId, date)` — same shape, but every
+  one of the teacher's classes is returned including zeros, and only rows for
+  the teacher's own subjects are counted.
+- `summariseClassAttendanceForTeacher(teacherId)` — `{ classId, className,
+  present, absent, percentage }[]` per class across the teacher's subjects.
+- `countMarksBySubjectForTeacher(teacherId)` — `{ subjectId, subjectName, count }[]`
+  of `exam_results` rows per subject the teacher teaches.
+- `listRecentExamResultsForStudent(studentId, since)` — `{ subjectId,
+  subjectName, marksObtained, recordedAt }[]` recorded after `since`.
+
 Also `@/lib/data/school`: `getOwnSchool`, `schoolSlugOrThrow`.
+
+### Header data — `@/lib/data/header` (server only)
+
+`getHeaderData(role, userId)` returns `{ today, notifications, calendar }`:
+
+- `today` — the local `YYYY-MM-DD` date.
+- `notifications` — a role-aware feed of `{ id, label, href }` items over a
+  fixed recent window (7 days), each linking to the page that deals with it.
+  Empty when there is nothing new. Never a fake unread count.
+- `calendar` — `{ date, kinds: string[] }[]` for the current month, where
+  `kinds` are the real record types on that day (`notice`, `attendance`).
+
+It is computed once per request on the server (RLS scopes every row) and passed
+into the client `AppShell` as a plain prop. A client component must never call
+it, and must never query Supabase itself.
+
+### Footer — `@/components/ui/SiteFooter`
+
+`{ schoolName? }` (defaults to `"Lucky Star Academy"`). Server-safe, no state.
+Renders the exact credit **Designed & Developed by AlbasaWEB** (linked to
+`https://albasaweb.com`, `target="_blank" rel="noopener noreferrer"`), muted and
+centred, with the school name and current year. No other third-party link or
+badge. Placed on the landing page, the login chooser, every AuthShell form, and
+the signed-in shell.
 
 View model types (`StudentSummary`, `SubjectSummary`, `TeacherSummary`,
 `NoticeSummary`, `ComplaintSummary`, `ClassSummary`, …) are exported from
@@ -115,6 +157,9 @@ so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
 | `@/components/auth/PasswordField` | `TextField` with a show/hide toggle |
 | `@/components/charts/AttendancePieChart` | `{ present, absent, height? }` |
 | `@/components/charts/MarksBarChart` | `{ data: {name, value}[], height?, color? }` |
+| `@/components/charts/QuestionBarChart` | `{ data: {name, value}[], question, unit?, color?, height?, horizontal? }` — a single-series bar chart that answers one question; `question` is the `aria-label` and tooltip title, `unit` is appended to the axis and labels, `horizontal` gives a per-category comparison |
+| `@/components/charts/PeopleBreakdown` | `{ students, teachers, admins, height? }` — three-bar horizontal comparison; administrators are always the third group |
+| `@/components/charts/tokens` | `CHART_COLORS` — the shared ordered series palette (`#147B45`, `#083E28`, `#F2B705`, `#3D9C6A`, `#6B8F7A`). Every chart imports from here; never hard-code a series colour |
 | `@/components/NextLink` | `next/link` wrapper; required for MUI `component={Link}` |
 
 `TableShell` takes `isEmpty` explicitly — do not rely on it inferring
@@ -171,7 +216,8 @@ new one.
     Fraunces for the hero, page titles, section headings and big numbers;
     Hanken for body, labels, table text and buttons.
 - Use theme tokens (`color="text.secondary"`, `sx={{ color: 'primary.main' }}`)
-  rather than hard-coded colours, except inside chart series.
+  rather than hard-coded colours, except inside chart series — and chart series
+  use `CHART_COLORS` from `@/components/charts/tokens`, not ad-hoc hex values.
 - Typefaces come from CSS variables set on `<html>` in `layout.tsx`; reference
   them via `DISPLAY_FONT` / `TEXT_FONT`, never a font-family string.
 - Radius scale is fixed by meaning: pill (buttons/chips) = 999, inputs = 12,
@@ -186,6 +232,24 @@ new one.
   `style={{ color: BRAND_GREEN, fontWeight: 600 }}` for a styled link.
 - A page must work at 360px: grids collapse to a single column (`gridTemplateColumns:
   { xs: '1fr', sm: '1fr 1fr' }`), and no element forces horizontal page scroll.
+
+## Shell, header and dashboards
+
+- The signed-in shell (`@/components/layout/AppShell`) takes `headerData` from
+  the role layout (which calls `getHeaderData`). The top bar carries
+  information, not chrome: today's date, a notification bell with a role-aware
+  feed (`NotificationFeed`), a mini-month calendar (`CalendarGrid`), and the
+  account menu. On `xs` the date, bell, calendar and account collapse into one
+  "More" `IconButton` → `Menu` so the bar stays a single line. Nothing in the
+  bar is ornamental.
+- Dashboards answer one question each, so they have a hierarchy rather than a
+  row of identical metric tiles. A hero chart (what needs attention today)
+  sits beside an attention panel, then supporting charts, then the recent
+  notices panel. Use `QuestionBarChart` / `PeopleBreakdown` for the dashboard
+  charts; reserve `StatCard` for a single focal metric, not a grid of six.
+- Administrators are a third group wherever people are counted or broken down
+  (the `admins` stat, `PeopleBreakdown`, and the `/admin/admins` page). The
+  administrators page is read-only — no add/delete controls.
 
 ## Form pattern
 
