@@ -90,9 +90,22 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000> and click **Register your school**. That creates
-your school, the first administrator account and signs you in. Then add a
-class, a subject, a teacher and some students.
+The system is built for a single school — **Lucky Star Academy** (Yendi,
+Northern Region, Ghana, Primary 1–6). Instead of registering the school by
+hand, seed the tenant, its classes, subjects, admin, teachers and students:
+
+```bash
+cd web
+node --env-file=.env.local scripts/seed.mjs
+```
+
+The seed data is generic / placeholder (per the school owner). It prints the
+sign-in credentials on completion, e.g. admin
+`admin@luckystaracademy.edu.gh` / `Admin@2026`. See `web/scripts/seed.mjs`.
+
+Open <http://localhost:3000>. The landing page is branded for the school and
+the "Register your school" flow is no longer surfaced, since the school is
+already provisioned.
 
 Without credentials the app still starts and shows a setup banner explaining
 these steps, rather than failing on the first query.

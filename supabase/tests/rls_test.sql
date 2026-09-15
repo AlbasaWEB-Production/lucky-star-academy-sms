@@ -132,20 +132,27 @@ insert into public.complaints (school_id, student_id, complaint) values
 -- Probes run as `authenticated`, so they need explicit write access to this
 -- table. It is temporary and never leaves the transaction.
 
-create temporary table pg_temp.rls_results (
+-- NOTE: this table is temporary and is referenced UNQUALIFIED. The Supabase
+-- SQL editor does not resolve the `pg_temp` schema alias the way a psql
+-- session does (it looks for a schema literally named "pg_temp"), so any
+-- `pg_temp.`-qualified reference fails with SQLSTATE 3F000. A temporary table
+-- is still required: a plain table in `public` would be counted by the
+-- "every public table has RLS enabled" structural check below. An unqualified
+-- name resolves to the temp schema because it is always first in search_path.
+create temporary table rls_results (
   probe    text primary key,
   observed bigint not null,
   expected bigint not null
 );
 
-grant all on pg_temp.rls_results to authenticated;
+grant all on rls_results to authenticated;
 
 
 -- ---------------------------------------------------------------------------
 -- 3. Structural checks (run as the owner)
 -- ---------------------------------------------------------------------------
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('every public table has RLS enabled', (
      select count(*) from pg_class c
      join pg_namespace n on n.oid = c.relnamespace
@@ -178,7 +185,7 @@ insert into pg_temp.rls_results (probe, observed, expected) values
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('admin A sees exactly its own school''s students',        (select count(*) from public.students), 2),
   ('admin A does not see school B''s students',              (select count(*) from public.students where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
   ('admin A sees both classes',                             (select count(*) from public.classes), 2),
@@ -201,7 +208,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('teacher A1 sees only students in the class it teaches',  (select count(*) from public.students), 1),
   ('teacher A1 sees only its own subject''s attendance',     (select count(*) from public.attendance), 1),
   ('teacher A1 sees only its own subject''s exam results',   (select count(*) from public.exam_results), 1),
@@ -220,7 +227,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('teacher A2 sees only its own (different) class''s students', (select count(*) from public.students), 1),
   ('teacher A2 does not see subject A1''s attendance',           (select count(*) from public.attendance where subject_id = 'a5000000-0000-4000-8000-000000000001'), 0),
   ('teacher A2 sees no teacher attendance (none recorded)',      (select count(*) from public.teacher_attendance), 0);
@@ -235,7 +242,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('student A1 sees only itself in students',                (select count(*) from public.students), 1),
   ('student A1 cannot see the other student',                (select count(*) from public.students where id = 'a3000000-0000-4000-8000-000000000002'), 0),
   ('student A1 sees only its own attendance',                (select count(*) from public.attendance), 1),
@@ -257,7 +264,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"b3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"b0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('student B1 sees only itself',                            (select count(*) from public.students), 1),
   ('student B1 sees only school B''s notice',                (select count(*) from public.notices), 1),
   ('student B1 cannot see school A''s notice',               (select count(*) from public.notices where school_id = 'a0000000-0000-4000-8000-000000000001'), 0),
@@ -274,7 +281,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"b0000000-0000-4000-8000-000000000001"}}';
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('admin B sees only its own school''s single student', (select count(*) from public.students), 1),
   ('admin B sees none of school A''s students',          (select count(*) from public.students where school_id = 'a0000000-0000-4000-8000-000000000001'), 0);
 
@@ -295,9 +302,9 @@ begin
   begin
     update public.profiles set role = 'admin'
      where id = 'a3000000-0000-4000-8000-000000000001';
-    insert into pg_temp.rls_results values ('student CANNOT promote itself to admin', 1, 0);
+    insert into rls_results values ('student CANNOT promote itself to admin', 1, 0);
   exception when others then
-    insert into pg_temp.rls_results values ('student CANNOT promote itself to admin', 0, 0);
+    insert into rls_results values ('student CANNOT promote itself to admin', 0, 0);
   end;
 end;
 $$;
@@ -309,9 +316,9 @@ begin
     values ('a0000000-0000-4000-8000-000000000001',
             'a3000000-0000-4000-8000-000000000002',
             'filed under another students name');
-    insert into pg_temp.rls_results values ('student CANNOT file a complaint as another student', 1, 0);
+    insert into rls_results values ('student CANNOT file a complaint as another student', 1, 0);
   exception when others then
-    insert into pg_temp.rls_results values ('student CANNOT file a complaint as another student', 0, 0);
+    insert into rls_results values ('student CANNOT file a complaint as another student', 0, 0);
   end;
 end;
 $$;
@@ -323,7 +330,7 @@ values ('a0000000-0000-4000-8000-000000000001',
         'a3000000-0000-4000-8000-000000000001',
         'a legitimate complaint');
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('student CAN file its own complaint (control)', (select count(*) from public.complaints), 2);
 
 reset role;
@@ -349,7 +356,7 @@ values ('a0000000-0000-4000-8000-000000000001',
         'a4000000-0000-4000-8000-000000000001',
         current_date - 1, 'Absent', 'a2000000-0000-4000-8000-000000000001');
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('teacher A1 CAN record attendance for its own subject (control)',
    (select count(*) from public.attendance where subject_id = 'a5000000-0000-4000-8000-000000000001'), 2);
 
@@ -362,9 +369,9 @@ begin
             'a5000000-0000-4000-8000-000000000002',
             'a4000000-0000-4000-8000-000000000002',
             current_date - 1, 'Absent', 'a2000000-0000-4000-8000-000000000001');
-    insert into pg_temp.rls_results values ('teacher A1 CANNOT record attendance for a colleague''s subject', 1, 0);
+    insert into rls_results values ('teacher A1 CANNOT record attendance for a colleague''s subject', 1, 0);
   exception when others then
-    insert into pg_temp.rls_results values ('teacher A1 CANNOT record attendance for a colleague''s subject', 0, 0);
+    insert into rls_results values ('teacher A1 CANNOT record attendance for a colleague''s subject', 0, 0);
   end;
 end;
 $$;
@@ -374,9 +381,9 @@ begin
   begin
     insert into public.notices (school_id, title, details)
     values ('a0000000-0000-4000-8000-000000000001', 'Teacher notice', 'teachers must not publish');
-    insert into pg_temp.rls_results values ('teacher CANNOT publish a notice', 1, 0);
+    insert into rls_results values ('teacher CANNOT publish a notice', 1, 0);
   exception when others then
-    insert into pg_temp.rls_results values ('teacher CANNOT publish a notice', 0, 0);
+    insert into rls_results values ('teacher CANNOT publish a notice', 0, 0);
   end;
 end;
 $$;
@@ -392,9 +399,9 @@ begin
   begin
     insert into public.classes (school_id, name)
     values ('b0000000-0000-4000-8000-000000000001', 'Cross-tenant class');
-    insert into pg_temp.rls_results values ('admin A CANNOT create a class in school B', 1, 0);
+    insert into rls_results values ('admin A CANNOT create a class in school B', 1, 0);
   exception when others then
-    insert into pg_temp.rls_results values ('admin A CANNOT create a class in school B', 0, 0);
+    insert into rls_results values ('admin A CANNOT create a class in school B', 0, 0);
   end;
 end;
 $$;
@@ -403,7 +410,7 @@ $$;
 insert into public.classes (school_id, name)
 values ('a0000000-0000-4000-8000-000000000001', 'Probe class');
 
-insert into pg_temp.rls_results (probe, observed, expected) values
+insert into rls_results (probe, observed, expected) values
   ('admin A CAN create a class in its own school (control)', (select count(*) from public.classes), 3);
 
 reset role;
@@ -418,14 +425,14 @@ select
   probe,
   observed,
   expected
-from pg_temp.rls_results
+from rls_results
 order by (observed = expected), probe;
 
 select
   count(*)                                    as total_probes,
   count(*) filter (where observed = expected) as passed,
   count(*) filter (where observed <> expected) as failed
-from pg_temp.rls_results;
+from rls_results;
 
 -- Nothing the suite created is kept.
 rollback;

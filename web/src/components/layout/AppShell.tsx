@@ -19,8 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import SchoolIcon from "@mui/icons-material/School";
 
+import SchoolLogo from "@/components/ui/SchoolLogo";
 import { signOutAction } from "@/lib/auth/actions";
 import { DRAWER_WIDTH } from "@/theme";
 import { NAV_SECTIONS } from "./nav";
@@ -62,7 +62,7 @@ export default function AppShell({
   const drawerContent = (
     <Box sx={{ width: DRAWER_WIDTH, height: "100%", display: "flex", flexDirection: "column" }}>
       <Toolbar sx={{ gap: 1.5 }}>
-        <SchoolIcon color="primary" />
+        <SchoolLogo decorative sizes="50px" sx={{ height: 40, flexShrink: 0 }} />
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
             {schoolName}

@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 
+import SchoolLogo from "@/components/ui/SchoolLogo";
+
 /**
  * Split-screen auth layout: form on the left, artwork on the right.
  *
@@ -48,6 +50,8 @@ export default function AuthShell({
             borderRadius: 3,
           }}
         >
+          <SchoolLogo priority sizes="80px" sx={{ height: 64, mb: 2.5 }} />
+
           <Typography variant="h5" sx={{ mb: 0.5, color: "secondary.main" }}>
             {title}
           </Typography>

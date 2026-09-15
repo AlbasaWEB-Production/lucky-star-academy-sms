@@ -1,6 +1,8 @@
 import Link from "@/components/NextLink";
 import { Box, Button, Container, Paper, Typography } from "@mui/material";
 
+import SchoolLogo from "@/components/ui/SchoolLogo";
+
 export const metadata = {
   title: "Sign in",
 };
@@ -14,6 +16,12 @@ const PORTALS = [
 export default function LoginChooserPage() {
   return (
     <Container maxWidth="sm" sx={{ py: { xs: 8, md: 12 } }}>
+      <SchoolLogo
+        priority
+        sizes="(min-width: 900px) 165px, 135px"
+        sx={{ height: { xs: 112, md: 136 }, mb: 4, justifyContent: "center" }}
+      />
+
       <Typography variant="h5" sx={{ mb: 1, color: "secondary.main" }}>
         Sign in
       </Typography>
@@ -46,10 +54,7 @@ export default function LoginChooserPage() {
 
       <Box sx={{ mt: 4, textAlign: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          New school?{" "}
-          <Link href="/register/school" style={{ color: "#7f56da", fontWeight: 600 }}>
-            Register here
-          </Link>
+          Lucky Star Academy is already provisioned — choose a portal above to sign in.
         </Typography>
       </Box>
     </Container>

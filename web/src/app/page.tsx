@@ -5,7 +5,13 @@ import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 
 import SetupBanner from "@/components/SetupBanner";
+import SchoolLogo from "@/components/ui/SchoolLogo";
+import StudentPhotoCollage from "@/components/ui/StudentPhotoCollage";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+
+export const metadata = {
+  title: "Lucky Star Academy | School Management System",
+};
 
 const ROLE_CARDS = [
   {
@@ -33,46 +39,71 @@ export default function HomePage() {
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       <Box
         sx={{
-          backgroundImage: "url(/classroom.png)",
+          backgroundImage: "url(/lucky_star_background.png)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
       >
-        <Box sx={{ backgroundColor: "rgba(39, 8, 67, 0.86)" }}>
+        {/*
+          The scrim runs dark on the left and clears by ~72% so the photo
+          collage on the right sits on the artwork rather than under the wash.
+          On narrow screens the columns stack, so the gradient becomes vertical
+          and the text keeps its contrast above the photos.
+        */}
+        <Box
+          sx={{
+            backgroundImage: {
+              xs: "linear-gradient(180deg, rgba(8, 62, 40, 0.88) 0%, rgba(8, 62, 40, 0.72) 55%, rgba(8, 62, 40, 0.5) 100%)",
+              md: "linear-gradient(90deg, rgba(8, 62, 40, 0.90) 0%, rgba(8, 62, 40, 0.68) 38%, rgba(8, 62, 40, 0.12) 72%, rgba(8, 62, 40, 0) 100%)",
+            },
+          }}
+        >
           <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-            <Typography variant="h3" sx={{ color: "#fff", fontWeight: 700, mb: 2 }}>
-              School Management System
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 400, maxWidth: 720, mb: 4 }}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+                gap: { xs: 6, md: 6 },
+                alignItems: "center",
+              }}
             >
-              Streamline school management, class organization, attendance tracking and
-              communication between students, teachers and administrators.
-            </Typography>
+              <Box>
+                <SchoolLogo
+                  component="h1"
+                  priority
+                  sizes="(min-width: 900px) 205px, 160px"
+                  sx={{ height: { xs: 132, md: 168 }, m: 0, mb: 3 }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 400, maxWidth: 720, mb: 4 }}
+                >
+                  Yendi, Northern Region, Ghana · Primary 1–6. Streamline class organization,
+                  attendance tracking, exam marks and communication between students, teachers and
+                  administrators.
+                </Typography>
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <Button
-                component={Link}
-                href="/register/school"
-                variant="contained"
-                size="large"
-                sx={{ backgroundColor: "#fff", color: "secondary.main", "&:hover": { backgroundColor: "#f0ecf7" } }}
-              >
-                Register your school
-              </Button>
-              <Button
-                component={Link}
-                href="/login"
-                variant="outlined"
-                size="large"
-                sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}
-              >
-                Sign in
-              </Button>
-            </Stack>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <Button
+                    component={Link}
+                    href="/login"
+                    variant="contained"
+                    size="large"
+                    sx={{
+                      backgroundColor: "#fff",
+                      color: "secondary.main",
+                      "&:hover": { backgroundColor: "#f0ecf7" },
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </Stack>
+              </Box>
+
+              <StudentPhotoCollage />
+            </Box>
           </Container>
         </Box>
       </Box>
