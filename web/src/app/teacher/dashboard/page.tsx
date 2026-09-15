@@ -82,27 +82,28 @@ export default async function TeacherDashboardPage() {
           label="My subjects"
           value={assignments.length}
           icon={<MenuBookIcon />}
+          tone="primary"
           hint="Subjects assigned to you"
         />
         <StatCard
           label="My classes"
           value={classCount}
           icon={<ClassIcon />}
-          accent="#270843"
+          primary
           hint="Classes you teach in"
         />
         <StatCard
           label="Students"
           value={students.length}
           icon={<GroupsIcon />}
-          accent="#080a43"
+          tone="deepGreen"
           hint="Across your classes"
         />
         <StatCard
           label="Notices"
           value={notices.length}
           icon={<AnnouncementIcon />}
-          accent="#b26a00"
+          tone="warning"
           hint="Published by your school"
         />
       </Box>
@@ -117,6 +118,9 @@ export default async function TeacherDashboardPage() {
         }}
       >
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Analytics
+          </Typography>
           <Typography variant="h6" sx={{ mb: 2 }}>
             Students per class
           </Typography>

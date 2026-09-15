@@ -97,13 +97,14 @@ export default async function StudentDashboardPage() {
           value={recorded > 0 ? `${attendancePercentage}%` : "-"}
           hint={recorded > 0 ? `${present} present of ${recorded} recorded` : "No attendance recorded yet"}
           icon={<PercentIcon />}
+          primary
         />
         <StatCard
           label="Subjects"
           value={subjects.length}
           hint={`In ${student.className}`}
           icon={<MenuBookIcon />}
-          accent="#080a43"
+          tone="primary"
         />
         <StatCard
           label="Average marks"
@@ -114,14 +115,14 @@ export default async function StudentDashboardPage() {
               : "No marks recorded yet"
           }
           icon={<GradeIcon />}
-          accent="#266810"
+          tone="deepGreen"
         />
         <StatCard
           label="Notices"
           value={notices.length}
           hint="Published by your school"
           icon={<AnnouncementIcon />}
-          accent="#b26a00"
+          tone="warning"
         />
       </Box>
 
@@ -135,6 +136,9 @@ export default async function StudentDashboardPage() {
         }}
       >
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Results
+          </Typography>
           <Typography variant="h6" sx={{ mb: 2 }}>
             Marks by subject
           </Typography>
@@ -145,6 +149,9 @@ export default async function StudentDashboardPage() {
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Attendance
+          </Typography>
           <Typography variant="h6" sx={{ mb: 1 }}>
             Attendance overall
           </Typography>

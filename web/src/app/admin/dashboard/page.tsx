@@ -48,21 +48,21 @@ export default async function AdminDashboardPage() {
           mb: 4,
         }}
       >
-        <StatCard label="Students" value={stats.students} icon={<GroupsIcon />} />
-        <StatCard label="Teachers" value={stats.teachers} icon={<SchoolIcon />} accent="#080a43" />
-        <StatCard label="Classes" value={stats.classes} icon={<ClassIcon />} accent="#270843" />
-        <StatCard label="Subjects" value={stats.subjects} icon={<MenuBookIcon />} accent="#266810" />
+        <StatCard label="Students" value={stats.students} icon={<GroupsIcon />} primary />
+        <StatCard label="Teachers" value={stats.teachers} icon={<SchoolIcon />} tone="deepGreen" />
+        <StatCard label="Classes" value={stats.classes} icon={<ClassIcon />} tone="neutral" />
+        <StatCard label="Subjects" value={stats.subjects} icon={<MenuBookIcon />} tone="primary" />
         <StatCard
           label="Notices"
           value={stats.notices}
           icon={<AnnouncementIcon />}
-          accent="#b26a00"
+          tone="warning"
         />
         <StatCard
           label="Complaints"
           value={stats.complaints}
           icon={<ReportProblemIcon />}
-          accent="#c62828"
+          tone="error"
         />
       </Box>
 
@@ -75,6 +75,9 @@ export default async function AdminDashboardPage() {
         }}
       >
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Analytics
+          </Typography>
           <Typography variant="h6" sx={{ mb: 2 }}>
             Students per class
           </Typography>
