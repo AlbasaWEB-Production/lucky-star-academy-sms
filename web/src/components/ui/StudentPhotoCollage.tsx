@@ -65,10 +65,9 @@ export default function StudentPhotoCollage() {
           sx={{
             position: "relative",
             aspectRatio: "4 / 3",
-            borderRadius: 3,
+            borderRadius: "20px",
             overflow: "hidden",
-            border: "3px solid rgba(255, 255, 255, 0.92)",
-            boxShadow: "0 18px 40px rgba(8, 62, 40, 0.28)",
+            boxShadow: "0 14px 32px rgba(8, 62, 40, 0.14)",
             transform: { xs: "none", md: `translateY(${photo.offset}px)` },
           }}
         >

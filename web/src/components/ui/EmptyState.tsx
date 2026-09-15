@@ -13,7 +13,7 @@ export default function EmptyState({
 }) {
   return (
     <Box sx={{ textAlign: "center", py: 6, px: 2 }}>
-      <Typography variant="h6" color="text.secondary">
+      <Typography variant="h6" sx={{ color: "secondary.main" }}>
         {title}
       </Typography>
       {description ? (

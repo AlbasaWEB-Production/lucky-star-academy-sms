@@ -258,6 +258,9 @@ const theme = createTheme({
           "&:nth-of-type(odd)": {
             backgroundColor: "rgba(20, 123, 69, 0.03)",
           },
+          "&:hover": {
+            backgroundColor: "rgba(20, 123, 69, 0.06)",
+          },
           "&:last-child td, &:last-child th": {
             borderBottom: 0,
           },

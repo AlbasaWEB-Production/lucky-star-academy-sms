@@ -18,12 +18,19 @@ import {
  * `render` prop would be exactly that. Pages therefore pass the body rows as
  * `children` elements, which is allowed, and each page keeps control of how
  * its cells are rendered.
+ *
+ * `density` switches between the compact rows a staff member scans and the
+ * roomier rows a pupil reads; `minWidth` lets a small pupil surface avoid a
+ * needlessly wide table. Row alignment (names left, numbers right) and
+ * whole-row links stay with the page, which renders the cells.
  */
 export default function TableShell({
   headers,
   children,
   emptyMessage = "Nothing to show yet.",
   isEmpty = false,
+  density = "comfortable",
+  minWidth = 640,
 }: {
   headers: string[];
   children?: ReactNode;
@@ -34,10 +41,20 @@ export default function TableShell({
    * render a header row above nothing at all.
    */
   isEmpty?: boolean;
+  /** "compact" for staff data tables, "comfortable" for pupil-facing surfaces. */
+  density?: "compact" | "comfortable";
+  /** Minimum table width; keep this small for pupil-facing tables. */
+  minWidth?: number;
 }) {
+  const compact = density === "compact";
+
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ overflowX: "auto" }}>
-      <Table size="medium" sx={{ minWidth: 640 }}>
+    <TableContainer
+      component={Paper}
+      variant="outlined"
+      sx={{ overflowX: "auto", borderRadius: "14px" }}
+    >
+      <Table size={compact ? "small" : "medium"} sx={{ minWidth }}>
         <TableHead>
           <TableRow>
             {headers.map((header) => (
