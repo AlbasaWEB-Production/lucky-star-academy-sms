@@ -57,6 +57,9 @@ export default async function StudentSubjectsPage() {
       />
 
       <Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+        <Typography variant="overline" color="text.secondary">
+          Performance
+        </Typography>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Marks by subject
         </Typography>
@@ -72,6 +75,7 @@ export default async function StudentSubjectsPage() {
 
       <TableShell
         headers={["Subject", "Code", "Sessions", "Teacher", "Your mark"]}
+        columnAlign={["left", "left", "right", "left", "right"]}
         isEmpty={subjects.length === 0}
         emptyMessage="No subjects have been created for your class yet. Your school office adds them."
       >
@@ -82,9 +86,13 @@ export default async function StudentSubjectsPage() {
             <TableRow key={subject.id}>
               <TableCell>{subject.name}</TableCell>
               <TableCell>{subject.code}</TableCell>
-              <TableCell>{subject.sessions}</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {subject.sessions}
+              </TableCell>
               <TableCell>{subject.teacherName ?? "Not assigned yet"}</TableCell>
-              <TableCell>{mark === undefined ? "Not recorded" : mark}</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {mark === undefined ? "Not recorded" : mark}
+              </TableCell>
             </TableRow>
           );
         })}
@@ -96,6 +104,7 @@ export default async function StudentSubjectsPage() {
 
       <TableShell
         headers={["Subject", "Code", "Marks obtained"]}
+        columnAlign={["left", "left", "right"]}
         isEmpty={marks.length === 0}
         emptyMessage="No marks have been recorded for you yet."
       >
@@ -103,7 +112,9 @@ export default async function StudentSubjectsPage() {
           <TableRow key={entry.subjectId}>
             <TableCell>{entry.subjectName}</TableCell>
             <TableCell>{entry.subjectCode}</TableCell>
-            <TableCell>{entry.marksObtained}</TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {entry.marksObtained}
+            </TableCell>
           </TableRow>
         ))}
       </TableShell>

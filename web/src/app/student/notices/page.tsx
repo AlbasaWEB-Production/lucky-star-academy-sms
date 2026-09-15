@@ -1,6 +1,7 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 
 import EmptyState from "@/components/ui/EmptyState";
+import NoticeCard from "@/components/ui/NoticeCard";
 import PageHeader from "@/components/ui/PageHeader";
 import { listNotices } from "@/lib/data/queries";
 
@@ -38,26 +39,7 @@ export default async function StudentNoticesPage() {
       ) : (
         <Box sx={{ display: "grid", gap: 2 }}>
           {notices.map((notice) => (
-            <Paper key={notice.id} variant="outlined" sx={{ p: 3 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <Typography variant="h6">{notice.title}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {new Date(notice.date).toLocaleDateString()}
-                </Typography>
-              </Box>
-
-              <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-wrap" }}>
-                {notice.details}
-              </Typography>
-            </Paper>
+            <NoticeCard key={notice.id} notice={notice} />
           ))}
         </Box>
       )}

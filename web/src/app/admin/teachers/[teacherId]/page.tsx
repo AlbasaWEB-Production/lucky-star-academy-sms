@@ -114,6 +114,7 @@ export default async function TeacherDetailPage({
       <Box sx={{ mb: 4 }}>
         <TableShell
           headers={["Subject", "Code", "Class", "Actions"]}
+          density="compact"
           isEmpty={teacher.assignments.length === 0}
           emptyMessage="This teacher has no subjects yet. Assign one from a subject's page."
         >
@@ -151,20 +152,31 @@ export default async function TeacherDetailPage({
       >
         <TableShell
           headers={["Date", "Present", "Absent", "Total"]}
+          columnAlign={["left", "right", "right", "right"]}
+          density="compact"
           isEmpty={attendance.length === 0}
           emptyMessage="No attendance recorded yet. Use the form above to record it for a date."
         >
           {attendance.map((record) => (
             <TableRow key={record.id}>
               <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
-              <TableCell>{record.presentCount}</TableCell>
-              <TableCell>{record.absentCount}</TableCell>
-              <TableCell>{record.presentCount + record.absentCount}</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {record.presentCount}
+              </TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {record.absentCount}
+              </TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {record.presentCount + record.absentCount}
+              </TableCell>
             </TableRow>
           ))}
         </TableShell>
 
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Overview
+          </Typography>
           <Typography variant="h6" sx={{ mb: 1 }}>
             Attendance overall
           </Typography>

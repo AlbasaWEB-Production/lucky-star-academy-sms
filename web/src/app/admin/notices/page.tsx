@@ -39,6 +39,7 @@ export default async function NoticesPage() {
 
       <TableShell
         headers={["Title", "Date", "Details", "Actions"]}
+        density="compact"
         isEmpty={notices.length === 0}
         emptyMessage="No notices yet. Publish your first notice to reach every portal."
       >

@@ -81,6 +81,7 @@ export default async function TeacherClassDetailPage({
       ) : (
         <TableShell
           headers={["Roll no.", "Name", ""]}
+          density="compact"
           isEmpty={false}
           emptyMessage="No students in this class yet."
         >

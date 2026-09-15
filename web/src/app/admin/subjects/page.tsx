@@ -46,6 +46,7 @@ export default async function SubjectsPage() {
 
       <TableShell
         headers={["Subject name", "Code", "Class", "Teacher", "Actions"]}
+        density="compact"
         isEmpty={subjects.length === 0}
         emptyMessage="No subjects yet. Add a subject to a class, then assign a teacher to it."
       >

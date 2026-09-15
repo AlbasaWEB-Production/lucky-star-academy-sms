@@ -32,6 +32,7 @@ export default async function ComplaintsPage() {
 
       <TableShell
         headers={["Student", "Date", "Complaint", "Actions"]}
+        density="compact"
         isEmpty={complaints.length === 0}
         emptyMessage="No complaints right now. Anything a student submits from their portal shows up here."
       >

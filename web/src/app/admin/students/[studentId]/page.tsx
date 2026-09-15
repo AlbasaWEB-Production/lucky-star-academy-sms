@@ -76,6 +76,9 @@ export default async function StudentDetailPage({
 
         <Box sx={{ display: "grid", gap: 3 }}>
           <Paper variant="outlined" sx={{ p: 3 }}>
+            <Typography variant="overline" color="text.secondary">
+              Overview
+            </Typography>
             <Typography variant="h6" sx={{ mb: 1 }}>
               Attendance overall
             </Typography>
@@ -83,6 +86,9 @@ export default async function StudentDetailPage({
           </Paper>
 
           <Paper variant="outlined" sx={{ p: 3 }}>
+            <Typography variant="overline" color="text.secondary">
+              Performance
+            </Typography>
             <Typography variant="h6" sx={{ mb: 1 }}>
               Marks by subject
             </Typography>
@@ -101,15 +107,23 @@ export default async function StudentDetailPage({
       <Box sx={{ mb: 4 }}>
         <TableShell
           headers={["Subject", "Present", "Absent", "Attendance", ""]}
+          columnAlign={["left", "right", "right", "right", undefined]}
+          density="compact"
           isEmpty={attendanceSummary.length === 0}
           emptyMessage="No attendance has been recorded for this student yet."
         >
           {attendanceSummary.map((entry) => (
             <TableRow key={entry.subjectId}>
               <TableCell>{entry.subjectName}</TableCell>
-              <TableCell>{entry.present}</TableCell>
-              <TableCell>{entry.absent}</TableCell>
-              <TableCell>{entry.percentage}%</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {entry.present}
+              </TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {entry.absent}
+              </TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {entry.percentage}%
+              </TableCell>
               <TableCell>
                 <ConfirmActionButton
                   action={removeStudentSubjectAttendanceAction}
@@ -131,6 +145,8 @@ export default async function StudentDetailPage({
       <Box sx={{ mb: 4 }}>
         <TableShell
           headers={["Subject", "Code", "Marks obtained"]}
+          columnAlign={["left", "left", "right"]}
+          density="compact"
           isEmpty={marks.length === 0}
           emptyMessage="No marks have been recorded for this student yet."
         >
@@ -138,7 +154,9 @@ export default async function StudentDetailPage({
             <TableRow key={entry.subjectId}>
               <TableCell>{entry.subjectName}</TableCell>
               <TableCell>{entry.subjectCode}</TableCell>
-              <TableCell>{entry.marksObtained}</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {entry.marksObtained}
+              </TableCell>
             </TableRow>
           ))}
         </TableShell>
@@ -150,6 +168,7 @@ export default async function StudentDetailPage({
 
       <TableShell
         headers={["Date", "Subject", "Status"]}
+        density="compact"
         isEmpty={attendanceRecords.length === 0}
         emptyMessage="No attendance records yet."
       >

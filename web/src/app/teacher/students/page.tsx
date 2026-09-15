@@ -39,6 +39,7 @@ export default async function TeacherStudentsPage() {
 
       <TableShell
         headers={["Roll no.", "Name", "Class", ""]}
+        density="compact"
         isEmpty={students.length === 0}
         emptyMessage="No students to show. You only see students in the classes you teach - ask an administrator if a class is missing."
       >

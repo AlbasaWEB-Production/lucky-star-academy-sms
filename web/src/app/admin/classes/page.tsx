@@ -35,14 +35,20 @@ export default async function ClassesPage() {
 
       <TableShell
         headers={["Class name", "Students", "Subjects", "Actions"]}
+        density="compact"
+        columnAlign={["left", "right", "right", "left"]}
         isEmpty={classes.length === 0}
         emptyMessage="No classes yet. Add your first class, then students and subjects can be added to it."
       >
         {classes.map((classroom) => (
           <TableRow key={classroom.id}>
             <TableCell>{classroom.name}</TableCell>
-            <TableCell>{classroom.studentCount}</TableCell>
-            <TableCell>{classroom.subjectCount}</TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {classroom.studentCount}
+            </TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {classroom.subjectCount}
+            </TableCell>
             <TableCell>
               <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                 <Button

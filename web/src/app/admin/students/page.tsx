@@ -44,6 +44,7 @@ export default async function StudentsPage() {
 
       <TableShell
         headers={["Roll no.", "Name", "Class", "Actions"]}
+        density="compact"
         isEmpty={students.length === 0}
         emptyMessage="No students yet. Add your first student to get started."
       >

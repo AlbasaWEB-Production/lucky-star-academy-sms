@@ -81,6 +81,8 @@ export default async function TeacherClassesPage() {
       ) : (
         <TableShell
           headers={["Class", "Subjects you teach", "Students", ""]}
+          density="compact"
+          columnAlign={["left", "left", "right", "left"]}
           isEmpty={false}
           emptyMessage="You do not teach any classes yet."
         >
@@ -94,7 +96,9 @@ export default async function TeacherClassesPage() {
                   </Typography>
                 ))}
               </TableCell>
-              <TableCell>{entry.studentCount}</TableCell>
+              <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                {entry.studentCount}
+              </TableCell>
               <TableCell>
                 <Button
                   component={Link}

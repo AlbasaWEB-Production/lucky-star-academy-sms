@@ -81,6 +81,9 @@ export default async function StudentAttendancePage() {
         }}
       >
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Overview
+          </Typography>
           <Typography variant="h6" sx={{ mb: 1 }}>
             Present vs absent
           </Typography>
@@ -97,16 +100,25 @@ export default async function StudentAttendancePage() {
 
           <TableShell
             headers={["Subject", "Present", "Absent", "Total", "Attendance"]}
+            columnAlign={["left", "right", "right", "right", "right"]}
             isEmpty={summary.length === 0}
             emptyMessage="No attendance has been recorded for you yet."
           >
             {summary.map((entry) => (
               <TableRow key={entry.subjectId}>
                 <TableCell>{entry.subjectName}</TableCell>
-                <TableCell>{entry.present}</TableCell>
-                <TableCell>{entry.absent}</TableCell>
-                <TableCell>{entry.total}</TableCell>
-                <TableCell>{entry.percentage}%</TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {entry.present}
+                </TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {entry.absent}
+                </TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {entry.total}
+                </TableCell>
+                <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {entry.percentage}%
+                </TableCell>
               </TableRow>
             ))}
           </TableShell>

@@ -35,6 +35,8 @@ export default async function TeachersPage() {
 
       <TableShell
         headers={["Name", "Email", "Assignments", "Subjects", "Actions"]}
+        density="compact"
+        columnAlign={["left", "left", "left", "right", "left"]}
         isEmpty={teachers.length === 0}
         emptyMessage="No teachers yet. Add a teacher, then assign them to subjects from the Subjects page."
       >
@@ -53,7 +55,9 @@ export default async function TeachersPage() {
                   .join(", ")
               )}
             </TableCell>
-            <TableCell>{teacher.assignments.length}</TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {teacher.assignments.length}
+            </TableCell>
             <TableCell>
               <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                 <Button

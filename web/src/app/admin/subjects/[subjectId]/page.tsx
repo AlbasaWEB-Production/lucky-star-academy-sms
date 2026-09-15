@@ -136,6 +136,9 @@ export default async function SubjectDetailPage({
         }}
       >
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Overview
+          </Typography>
           <Typography variant="h6" sx={{ mb: 1 }}>
             Attendance summary
           </Typography>
@@ -143,6 +146,9 @@ export default async function SubjectDetailPage({
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 3 }}>
+          <Typography variant="overline" color="text.secondary">
+            Performance
+          </Typography>
           <Typography variant="h6" sx={{ mb: 2 }}>
             Marks summary
           </Typography>
@@ -162,6 +168,8 @@ export default async function SubjectDetailPage({
 
       <TableShell
         headers={["Roll no.", "Student", "Marks", "Present", "Absent", "Attendance", "Actions"]}
+        columnAlign={["left", "left", "right", "right", "right", "right", undefined]}
+        density="compact"
         isEmpty={roster.length === 0}
         emptyMessage="This class has no students yet. Add a student, then their marks and attendance appear here."
       >
@@ -169,10 +177,18 @@ export default async function SubjectDetailPage({
           <TableRow key={row.student.id}>
             <TableCell>{row.student.rollNumber}</TableCell>
             <TableCell>{row.student.fullName}</TableCell>
-            <TableCell>{row.marksObtained ?? "-"}</TableCell>
-            <TableCell>{row.present}</TableCell>
-            <TableCell>{row.absent}</TableCell>
-            <TableCell>{row.present + row.absent === 0 ? "-" : `${row.percentage}%`}</TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {row.marksObtained ?? "-"}
+            </TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {row.present}
+            </TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {row.absent}
+            </TableCell>
+            <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {row.present + row.absent === 0 ? "-" : `${row.percentage}%`}
+            </TableCell>
             <TableCell>
               <Button
                 component={Link}

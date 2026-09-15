@@ -84,6 +84,7 @@ export default async function ClassDetailPage({
       <Box sx={{ mb: 4 }}>
         <TableShell
           headers={["Roll no.", "Name", "Actions"]}
+          density="compact"
           isEmpty={students.length === 0}
           emptyMessage="No students in this class yet. Add a student and choose this class."
         >
@@ -112,6 +113,7 @@ export default async function ClassDetailPage({
 
       <TableShell
         headers={["Subject name", "Code", "Teacher", "Actions"]}
+        density="compact"
         isEmpty={subjects.length === 0}
         emptyMessage="No subjects in this class yet. Add a subject and choose this class."
       >

@@ -31,6 +31,7 @@ export default function TableShell({
   isEmpty = false,
   density = "comfortable",
   minWidth = 640,
+  columnAlign,
 }: {
   headers: string[];
   children?: ReactNode;
@@ -45,6 +46,12 @@ export default function TableShell({
   density?: "compact" | "comfortable";
   /** Minimum table width; keep this small for pupil-facing tables. */
   minWidth?: number;
+  /**
+   * Per-column horizontal alignment, indexed to `headers`. Numeric columns
+   * (counts, marks, percentages) align right; names and labels stay left. The
+   * page sets the matching `align` on its own body cells.
+   */
+  columnAlign?: Array<"left" | "right" | undefined>;
 }) {
   const compact = density === "compact";
 
@@ -57,8 +64,10 @@ export default function TableShell({
       <Table size={compact ? "small" : "medium"} sx={{ minWidth }}>
         <TableHead>
           <TableRow>
-            {headers.map((header) => (
-              <TableCell key={header}>{header}</TableCell>
+            {headers.map((header, index) => (
+              <TableCell key={header} align={columnAlign?.[index] === "right" ? "right" : undefined}>
+                {header}
+              </TableCell>
             ))}
           </TableRow>
         </TableHead>

@@ -1,6 +1,7 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 
 import EmptyState from "@/components/ui/EmptyState";
+import NoticeCard from "@/components/ui/NoticeCard";
 import PageHeader from "@/components/ui/PageHeader";
 import { requireRoleWithTenant } from "@/lib/auth/session";
 import { listNotices } from "@/lib/data/queries";
@@ -46,15 +47,7 @@ export default async function TeacherNoticesPage() {
           }}
         >
           {notices.map((notice) => (
-            <Paper key={notice.id} variant="outlined" sx={{ p: 3 }}>
-              <Typography variant="h6">{notice.title}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {new Date(notice.date).toLocaleDateString()}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1.5, whiteSpace: "pre-line" }}>
-                {notice.details}
-              </Typography>
-            </Paper>
+            <NoticeCard key={notice.id} notice={notice} />
           ))}
         </Box>
       )}
