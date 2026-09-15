@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, TextField, Typography } from "@mui/material";
 
 import PasswordField from "@/components/auth/PasswordField";
 import { updateTeacherAction } from "@/lib/actions/roster";
@@ -22,26 +22,48 @@ export default function EditTeacherForm({
   const [state, formAction, isPending] = useActionState(updateTeacherAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
       <input type="hidden" name="teacherId" value={teacher.id} />
 
-      <TextField
-        name="fullName"
-        label="Teacher name"
-        defaultValue={teacher.fullName}
-        required
-        fullWidth
-        margin="normal"
-      />
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
 
-      <TextField
-        label="Email address"
-        defaultValue={teacher.email ?? "No login address"}
-        fullWidth
-        margin="normal"
-        disabled
-        helperText="The sign-in address cannot be changed here."
-      />
+      <Typography variant="overline" color="text.secondary">
+        Teacher details
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <TextField
+          name="fullName"
+          label="Teacher name"
+          defaultValue={teacher.fullName}
+          required
+          fullWidth
+          margin="none"
+        />
+
+        <TextField
+          label="Email address"
+          defaultValue={teacher.email ?? "No login address"}
+          fullWidth
+          margin="none"
+          disabled
+          helperText="The sign-in address cannot be changed here."
+        />
+      </Box>
+
+      <Typography variant="overline" color="text.secondary" sx={{ mt: 3 }}>
+        Login
+      </Typography>
 
       <PasswordField
         name="password"
@@ -50,12 +72,6 @@ export default function EditTeacherForm({
         margin="normal"
         helperText="Leave blank to keep the current password."
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? <CircularProgress size={24} color="inherit" /> : "Save changes"}

@@ -30,8 +30,14 @@ export default function TeacherAttendanceForm({
   );
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
       <input type="hidden" name="teacherId" value={teacherId} />
+
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
 
       <TextField
         name="date"
@@ -41,36 +47,39 @@ export default function TeacherAttendanceForm({
         required
         fullWidth
         margin="normal"
+        sx={{ maxWidth: 240 }}
         slotProps={{ inputLabel: { shrink: true } }}
       />
 
-      <TextField
-        name="presentCount"
-        label="Present"
-        type="number"
-        defaultValue={defaultPresentCount}
-        required
-        fullWidth
-        margin="normal"
-        slotProps={{ htmlInput: { min: 0, step: 1 } }}
-      />
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <TextField
+          name="presentCount"
+          label="Present"
+          type="number"
+          defaultValue={defaultPresentCount}
+          required
+          fullWidth
+          margin="none"
+          slotProps={{ htmlInput: { min: 0, step: 1 } }}
+        />
 
-      <TextField
-        name="absentCount"
-        label="Absent"
-        type="number"
-        defaultValue={defaultAbsentCount}
-        required
-        fullWidth
-        margin="normal"
-        slotProps={{ htmlInput: { min: 0, step: 1 } }}
-      />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
+        <TextField
+          name="absentCount"
+          label="Absent"
+          type="number"
+          defaultValue={defaultAbsentCount}
+          required
+          fullWidth
+          margin="none"
+          slotProps={{ htmlInput: { min: 0, step: 1 } }}
+        />
+      </Box>
 
       {state.ok ? (
         <Alert severity="success" sx={{ mt: 2 }}>

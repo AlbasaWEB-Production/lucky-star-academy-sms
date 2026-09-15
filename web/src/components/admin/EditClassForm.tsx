@@ -20,8 +20,14 @@ export default function EditClassForm({
   const [state, formAction, isPending] = useActionState(updateClassAction, initialFormResult);
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
       <input type="hidden" name="classId" value={classRecord.id} />
+
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
 
       <TextField
         name="className"
@@ -31,12 +37,6 @@ export default function EditClassForm({
         fullWidth
         margin="normal"
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? <CircularProgress size={24} color="inherit" /> : "Save changes"}

@@ -19,6 +19,12 @@ export default function ProfileNameForm({ currentName }: { currentName: string }
 
   return (
     <Box component="form" action={formAction} noValidate sx={{ maxWidth: 480 }}>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="fullName"
         label="Full name"
@@ -27,12 +33,6 @@ export default function ProfileNameForm({ currentName }: { currentName: string }
         fullWidth
         margin="normal"
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       {state.ok ? (
         <Alert severity="success" sx={{ mt: 2 }}>

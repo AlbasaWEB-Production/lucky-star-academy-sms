@@ -26,6 +26,12 @@ export default function ComplaintForm({ today }: { today: string }) {
 
   return (
     <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="complaint"
         label="Your complaint"
@@ -45,15 +51,10 @@ export default function ComplaintForm({ today }: { today: string }) {
         fullWidth
         margin="normal"
         defaultValue={today}
+        sx={{ maxWidth: 240 }}
         slotProps={{ inputLabel: { shrink: true } }}
         helperText="Optional - defaults to today."
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       {state.ok ? (
         <Alert severity="success" sx={{ mt: 2 }}>

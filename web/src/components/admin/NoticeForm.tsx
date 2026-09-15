@@ -31,6 +31,12 @@ export default function NoticeForm({ notice }: { notice?: NoticeSummary }) {
     <Box component="form" action={formAction} noValidate sx={{ maxWidth: 640 }}>
       {notice ? <input type="hidden" name="noticeId" value={notice.id} /> : null}
 
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="title"
         label="Title"
@@ -62,15 +68,10 @@ export default function NoticeForm({ notice }: { notice?: NoticeSummary }) {
         defaultValue={notice?.date ? notice.date.slice(0, 10) : ""}
         fullWidth
         margin="normal"
+        sx={{ maxWidth: 240 }}
         slotProps={{ inputLabel: { shrink: true } }}
         helperText="Leave blank to publish with today's date."
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>
         {isPending ? (

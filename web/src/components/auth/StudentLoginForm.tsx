@@ -24,6 +24,12 @@ export default function StudentLoginForm() {
 
   return (
     <Box component="form" action={formAction} noValidate>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="rollNumber"
         label="Roll number"
@@ -33,6 +39,7 @@ export default function StudentLoginForm() {
         autoFocus
         margin="normal"
         slotProps={{ htmlInput: { min: 1, step: 1 } }}
+        helperText="Your roll number, as given at enrolment."
       />
 
       <TextField
@@ -52,12 +59,6 @@ export default function StudentLoginForm() {
         fullWidth
         margin="normal"
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button
         type="submit"

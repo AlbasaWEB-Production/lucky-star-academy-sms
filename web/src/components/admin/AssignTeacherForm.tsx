@@ -27,8 +27,14 @@ export default function AssignTeacherForm({
   const [teacherId, setTeacherId] = useState(currentTeacherId ?? "");
 
   return (
-    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 520 }}>
+    <Box component="form" action={formAction} noValidate sx={{ maxWidth: 560 }}>
       <input type="hidden" name="subjectId" value={subjectId} />
+
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
 
       <TextField
         name="teacherId"
@@ -51,12 +57,6 @@ export default function AssignTeacherForm({
       {teachers.length === 0 ? (
         <Alert severity="info" sx={{ mt: 2 }}>
           There are no teachers in this school yet. Add one from the Teachers page first.
-        </Alert>
-      ) : null}
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
         </Alert>
       ) : null}
 

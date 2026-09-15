@@ -23,7 +23,13 @@ export default function RegisterSchoolForm() {
 
   return (
     <Box component="form" action={formAction} noValidate>
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
+      <Typography variant="overline" color="text.secondary">
         School
       </Typography>
 
@@ -38,54 +44,64 @@ export default function RegisterSchoolForm() {
         helperText="Used to generate your school's unique identifier."
       />
 
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>
+      <Typography variant="overline" color="text.secondary" sx={{ mt: 3 }}>
         Administrator
       </Typography>
 
-      <TextField
-        name="adminName"
-        label="Your full name"
-        autoComplete="name"
-        required
-        fullWidth
-        margin="normal"
-      />
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <TextField
+          name="adminName"
+          label="Your full name"
+          autoComplete="name"
+          required
+          fullWidth
+          margin="none"
+        />
 
-      <TextField
-        name="email"
-        label="Email"
-        type="email"
-        autoComplete="email"
-        required
-        fullWidth
-        margin="normal"
-        helperText="You will sign in with this address."
-      />
+        <TextField
+          name="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          required
+          fullWidth
+          margin="none"
+          helperText="You will sign in with this address."
+        />
+      </Box>
 
-      <PasswordField
-        name="password"
-        label="Password"
-        autoComplete="new-password"
-        required
-        fullWidth
-        margin="normal"
-        helperText="At least 8 characters."
-      />
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <PasswordField
+          name="password"
+          label="Password"
+          autoComplete="new-password"
+          required
+          fullWidth
+          margin="none"
+          helperText="At least 8 characters."
+        />
 
-      <PasswordField
-        name="confirmPassword"
-        label="Confirm password"
-        autoComplete="new-password"
-        required
-        fullWidth
-        margin="normal"
-      />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
+        <PasswordField
+          name="confirmPassword"
+          label="Confirm password"
+          autoComplete="new-password"
+          required
+          fullWidth
+          margin="none"
+        />
+      </Box>
 
       <Button
         type="submit"

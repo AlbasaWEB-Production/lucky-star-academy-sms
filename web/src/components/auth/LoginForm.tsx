@@ -23,6 +23,12 @@ export default function LoginForm({ role }: { role: "admin" | "teacher" }) {
     <Box component="form" action={formAction} noValidate>
       <input type="hidden" name="role" value={role} />
 
+      {state.error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {state.error}
+        </Alert>
+      ) : null}
+
       <TextField
         name="email"
         label="Email"
@@ -42,12 +48,6 @@ export default function LoginForm({ role }: { role: "admin" | "teacher" }) {
         fullWidth
         margin="normal"
       />
-
-      {state.error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {state.error}
-        </Alert>
-      ) : null}
 
       <Button
         type="submit"

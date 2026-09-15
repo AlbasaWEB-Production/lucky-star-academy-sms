@@ -124,6 +124,9 @@ export default function MarksEntryForm({
   return (
     <Box>
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+        <Typography variant="overline" color="text.secondary">
+          Subject
+        </Typography>
         <TextField
           label="Subject"
           select
@@ -160,6 +163,12 @@ export default function MarksEntryForm({
         <Box component="form" action={formAction}>
           <input type="hidden" name="subjectId" value={subject.id} />
           <input type="hidden" name="entries" value={entries} />
+
+          {state.error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {state.error}
+            </Alert>
+          ) : null}
 
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
@@ -210,12 +219,6 @@ export default function MarksEntryForm({
               </TableBody>
             </Table>
           </TableContainer>
-
-          {state.error ? (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {state.error}
-            </Alert>
-          ) : null}
 
           {state.ok ? (
             <Alert severity="success" sx={{ mt: 2 }}>
