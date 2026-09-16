@@ -60,6 +60,37 @@ export type PaymentRow = {
   reversesPaymentId: string | null;
 };
 
+export type PaymentWithContextRow = {
+  id: string;
+  receiptNumber: number;
+  studentName: string;
+  className: string;
+  amountPesewas: number;
+  paymentDate: string;
+  method: string;
+  isReversal: boolean;
+  reversalReason: string | null;
+  reversesPaymentId: string | null;
+};
+
+export type PaymentReceiptRow = {
+  paymentId: string;
+  assessmentId: string;
+  receiptNumber: number;
+  amountPesewas: number;
+  paymentDate: string;
+  method: string;
+  isReversal: boolean;
+  reversalReason: string | null;
+  reversesPaymentId: string | null;
+  assessmentAmountPesewas: number;
+  assessmentDueDate: string | null;
+  studentName: string;
+  rollNumber: number;
+  className: string;
+  termName: string;
+};
+
 export type FeeStatusByStudentRow = {
   studentId: string;
   studentName: string;
@@ -258,6 +289,104 @@ export async function listPaymentsForAssessment(assessmentId: string): Promise<P
     reversalReason: row.reversal_reason,
     reversesPaymentId: row.reverses_payment_id,
   }));
+}
+
+/**
+ * Payments made against a term's assessments, newest first, each carrying the
+ * pupil and class it belongs to. Used by the payments ledger, which is admin
+ * only — `fee_payments` has no teacher or pupil policy, so RLS returns every
+ * payment for an admin and nothing for any other role.
+ */
+export async function listPaymentsForTerm(termId: string): Promise<PaymentWithContextRow[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: assessments } = await supabase
+    .from("fee_assessments")
+    .select("id, student_id, class_id")
+    .eq("term_id", termId);
+
+  const ids = (assessments ?? []).map((row) => row.id);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data: payments } = await supabase
+    .from("fee_payments")
+    .select(
+      "id, assessment_id, amount, payment_date, method, receipt_number, is_reversal, reversal_reason, reverses_payment_id",
+    )
+    .in("assessment_id", ids)
+    .order("created_at", { ascending: false });
+
+  const [students, classes] = await Promise.all([studentNames(), classNames()]);
+  const context = new Map(
+    (assessments ?? []).map((row) => [row.id, { studentId: row.student_id, classId: row.class_id }]),
+  );
+
+  return (payments ?? []).map((row) => {
+    const ctx = context.get(row.assessment_id) ?? { studentId: null, classId: null };
+    return {
+      id: row.id,
+      receiptNumber: Number(row.receipt_number),
+      studentName: ctx.studentId ? (students.get(ctx.studentId)?.name ?? "Pupil") : "Pupil",
+      className: ctx.classId ? (classes.get(ctx.classId) ?? "Class") : "Class",
+      amountPesewas: Number(row.amount),
+      paymentDate: row.payment_date,
+      method: row.method,
+      isReversal: row.is_reversal,
+      reversalReason: row.reversal_reason,
+      reversesPaymentId: row.reverses_payment_id,
+    };
+  });
+}
+
+/**
+ * A single payment, with the assessment, pupil, class and term it belongs to,
+ * for rendering a receipt. An admin lands here straight after recording a
+ * payment. RLS scopes the read to the caller's own rows, so an admin can read
+ * any of the school's payments and no other role can reach one.
+ */
+export async function getPaymentReceipt(paymentId: string): Promise<PaymentReceiptRow | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: payment } = await supabase
+    .from("fee_payments")
+    .select(
+      "id, assessment_id, amount, payment_date, method, receipt_number, is_reversal, reversal_reason, reverses_payment_id",
+    )
+    .eq("id", paymentId)
+    .single();
+
+  if (!payment) {
+    return null;
+  }
+
+  const { data: assessment } = await supabase
+    .from("fee_assessments")
+    .select("student_id, class_id, term_id, amount, due_date")
+    .eq("id", payment.assessment_id)
+    .single();
+
+  const [students, classes, terms] = await Promise.all([studentNames(), classNames(), termNames()]);
+
+  const student = assessment ? students.get(assessment.student_id) : undefined;
+  return {
+    paymentId: payment.id,
+    assessmentId: payment.assessment_id,
+    receiptNumber: Number(payment.receipt_number),
+    amountPesewas: Number(payment.amount),
+    paymentDate: payment.payment_date,
+    method: payment.method,
+    isReversal: payment.is_reversal,
+    reversalReason: payment.reversal_reason,
+    reversesPaymentId: payment.reverses_payment_id,
+    assessmentAmountPesewas: assessment ? Number(assessment.amount) : 0,
+    assessmentDueDate: assessment?.due_date ?? null,
+    studentName: assessment ? (student?.name ?? "Pupil") : "Pupil",
+    rollNumber: assessment ? (student?.rollNumber ?? 0) : 0,
+    className: assessment ? (classes.get(assessment.class_id) ?? "Class") : "Class",
+    termName: assessment ? (terms.get(assessment.term_id) ?? "Term") : "Term",
+  };
 }
 
 /**
