@@ -981,8 +981,14 @@ insert into rls_results (probe, observed, expected) values
   ('admin B sees its own class rate',                (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'b4000000-0000-4000-8000-000000000001'), 100);
 
 -- Positive control: admin A CAN record an incident, proving the teacher denial
--- above was the policy working and not the insert being broken. Done after the
--- role probes so it cannot shift the counts a teacher or student relied on.
+-- above was the policy working and not the insert being broken. It must run as
+-- admin A — the insert policy's `with check` ties the row's school_id to
+-- jwt_school_id(), so recording under admin B (or any other role) would be
+-- rejected and the probe would fail. Done after the role probes so it cannot
+-- shift the counts a teacher or student relied on.
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
 insert into public.incidents (id, school_id, student_id, class_id, incident_type)
 values ('aa000000-0000-4000-8000-000000000099', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'lateness');
 
