@@ -32,3 +32,6 @@ supabase/.temp/
 
 # gstack session state
 .gstack/
+
+.vercel
+.env*
