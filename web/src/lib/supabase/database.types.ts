@@ -19,6 +19,69 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      admissions: {
+        Row: {
+          class_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          declined_on: string | null;
+          enrolled_on: string | null;
+          guardian_name: string | null;
+          guardian_phone: string | null;
+          id: string;
+          intake_term_id: string | null;
+          offered_on: string | null;
+          pupil_name: string;
+          received_on: string | null;
+          school_id: string;
+          source: string | null;
+          stage: string;
+          stage_date: string;
+          submitted_on: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          class_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          declined_on?: string | null;
+          enrolled_on?: string | null;
+          guardian_name?: string | null;
+          guardian_phone?: string | null;
+          id?: string;
+          intake_term_id?: string | null;
+          offered_on?: string | null;
+          pupil_name: string;
+          received_on?: string | null;
+          school_id: string;
+          source?: string | null;
+          stage?: string;
+          stage_date?: string;
+          submitted_on?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          class_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          declined_on?: string | null;
+          enrolled_on?: string | null;
+          guardian_name?: string | null;
+          guardian_phone?: string | null;
+          id?: string;
+          intake_term_id?: string | null;
+          offered_on?: string | null;
+          pupil_name?: string;
+          received_on?: string | null;
+          school_id?: string;
+          source?: string | null;
+          stage?: string;
+          stage_date?: string;
+          submitted_on?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       attendance: {
         Row: {
           class_id: string;
@@ -58,6 +121,7 @@ export type Database = {
       classes: {
         Row: {
           campus: string | null;
+          capacity: number | null;
           created_at: string;
           id: string;
           name: string;
@@ -66,6 +130,7 @@ export type Database = {
         };
         Insert: {
           campus?: string | null;
+          capacity?: number | null;
           created_at?: string;
           id?: string;
           name: string;
@@ -74,6 +139,7 @@ export type Database = {
         };
         Update: {
           campus?: string | null;
+          capacity?: number | null;
           created_at?: string;
           id?: string;
           name?: string;
@@ -785,6 +851,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_admissions_funnel: {
+        Row: {
+          conversion_percent: number;
+          leads: number;
+          stage: string;
+        };
+        Relationships: [];
+      };
+      v_capacity_utilisation: {
+        Row: {
+          campus: string | null;
+          capacity: number | null;
+          class_id: string;
+          class_name: string;
+          pupil_count: number;
+          utilisation_percent: number | null;
+        };
+        Relationships: [];
+      };
+      v_new_enrolments_by_class_intake: {
+        Row: {
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          enrolled: number;
+          school_id: string;
+          term_id: string | null;
+          term_name: string | null;
+          term_number: number | null;
+        };
+        Relationships: [];
+      };
       v_pupil_teacher_ratio: {
         Row: {
           campus: string | null;
@@ -893,6 +991,7 @@ export type Notice = Tables<"notices">;
 export type Complaint = Tables<"complaints">;
 export type Term = Tables<"terms">;
 export type DashboardThreshold = Tables<"dashboard_thresholds">;
+export type Admission = Tables<"admissions">;
 export type StudentDirectoryEntry = Views<"student_directory">;
 
 // Analytic view models (all `security_invoker`, so RLS still applies).
@@ -918,5 +1017,8 @@ export type CashPosition = Views<"v_cash_position">;
 // Phase 3 - people and teaching.
 export type PupilTeacherRatio = Views<"v_pupil_teacher_ratio">;
 export type TeacherAttendanceRate = Views<"v_teacher_attendance_rate">;
+export type AdmissionsFunnel = Views<"v_admissions_funnel">;
+export type NewEnrolmentsByClassIntake = Views<"v_new_enrolments_by_class_intake">;
+export type CapacityUtilisation = Views<"v_capacity_utilisation">;
 
 export type AtRiskPupil = Functions<"fn_at_risk_pupils">;

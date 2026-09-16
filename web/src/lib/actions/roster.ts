@@ -65,13 +65,18 @@ export async function updateClassAction(
 
   const id = readString(formData, "classId");
   const name = readString(formData, "className");
+  const capacity = readInt(formData, "capacity");
 
   if (!id || !name) {
     return fail("Class name is required.");
   }
 
+  if (capacity !== null && capacity <= 0) {
+    return fail("Capacity must be a positive number of seats, or empty to leave it unset.");
+  }
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("classes").update({ name }).eq("id", id);
+  const { error } = await supabase.from("classes").update({ name, capacity }).eq("id", id);
 
   if (error) {
     return fail(describeDatabaseError(error));

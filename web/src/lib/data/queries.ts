@@ -205,7 +205,7 @@ export async function getClassById(classId: string) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("classes")
-    .select("id, name")
+    .select("id, name, capacity")
     .eq("id", classId)
     .maybeSingle();
 
