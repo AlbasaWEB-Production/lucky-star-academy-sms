@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -122,6 +122,14 @@ export default function DataTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>(initialSortDirection);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageSize);
+
+  // Each header cell gets an id and each data cell a matching `headers`, so a
+  // screen reader can name every cell by its column. Without this the cells are
+  // announced as bare values with no column context. `useId` keeps two tables on
+  // one page from colliding; the colons it emits are stripped because an id is
+  // also used as a CSS/selector-safe token.
+  const tableId = useId().replace(/[^a-zA-Z0-9-]/g, "");
+  const headerId = (key: string) => `${tableId}-${key}`;
 
   const columnByKey = useMemo(
     () => new Map(columns.map((column) => [column.key, column])),
@@ -259,6 +267,8 @@ export default function DataTable({
                 <TableCell
                   key={column.key}
                   align={column.align === "right" ? "right" : undefined}
+                  id={headerId(column.key)}
+                  scope="col"
                   sortDirection={sortKey === column.key ? sortDirection : false}
                   sx={{ whiteSpace: "nowrap" }}
                 >
@@ -298,6 +308,7 @@ export default function DataTable({
                     <TableCell
                       key={column.key}
                       align={column.align === "right" ? "right" : undefined}
+                      headers={headerId(column.key)}
                       sx={
                         column.align === "right"
                           ? { fontVariantNumeric: "tabular-nums" }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  Box,
   Paper,
   Table,
   TableBody,
@@ -9,6 +10,25 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+
+/**
+ * A visually-hidden label: present to screen readers, invisible on screen.
+ * Used for an action column - a column with no visible heading because every
+ * cell is a button. An empty `<th>` is flagged by axe (`empty-table-header`,
+ * and `td-has-header`, which needs every data cell's column header to have
+ * content), so an empty label still has to carry accessible text.
+ */
+const srOnly = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clipPath: "inset(50%)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
 
 /**
  * Presentational table wrapper.
@@ -66,7 +86,13 @@ export default function TableShell({
           <TableRow>
             {headers.map((header, index) => (
               <TableCell key={header} align={columnAlign?.[index] === "right" ? "right" : undefined}>
-                {header}
+                {header === "" ? (
+                  <Box component="span" sx={srOnly}>
+                    Actions
+                  </Box>
+                ) : (
+                  header
+                )}
               </TableCell>
             ))}
           </TableRow>

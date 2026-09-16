@@ -103,12 +103,18 @@ export default function StatCard({
           gap: 1,
         }}
       >
+        {/* Text on the green fill is solid white, never a softened alpha. A
+            0.85 white composites over `primary.main` (#147b45) to #dcebe3,
+            which is 4.31:1 — under AA — and 0.8 lands at 4.02:1. Solid white
+            is 5.32:1. The hierarchy is carried by weight and size instead;
+            only the non-text decoration (the rule, the icon chip) stays
+            translucent, where contrast minimums do not apply. */}
         <Typography
           variant="overline"
           noWrap
           sx={{
             lineHeight: 1.2,
-            ...(primary ? { color: "rgba(255, 255, 255, 0.85)" } : { color: "text.secondary" }),
+            ...(primary ? { color: "#ffffff" } : { color: "text.secondary" }),
           }}
         >
           {label}
@@ -141,8 +147,12 @@ export default function StatCard({
         }}
       />
 
+      {/* A metric value is not a heading. Without `component="div"` the theme's
+          variant mapping would render the biggest number on the page as an `h2`,
+          putting a spurious heading between the card titles. */}
       <Typography
         variant="h4"
+        component="div"
         sx={{
           lineHeight: 1.1,
           ...(primary ? { color: "#ffffff" } : { color: "text.primary" }),
@@ -154,7 +164,7 @@ export default function StatCard({
       {hint ? (
         <Typography
           variant="caption"
-          sx={primary ? { color: "rgba(255, 255, 255, 0.8)" } : { color: "text.secondary" }}
+          sx={primary ? { color: "#ffffff" } : { color: "text.secondary" }}
         >
           {hint}
         </Typography>
@@ -202,7 +212,7 @@ function StatCardTrendRow({ trend, primary }: { trend: StatCardTrend; primary: b
       {trend.label ? (
         <Typography
           variant="caption"
-          sx={primary ? { color: "rgba(255, 255, 255, 0.75)" } : { color: "text.secondary" }}
+          sx={primary ? { color: "#ffffff" } : { color: "text.secondary" }}
         >
           {trend.label}
         </Typography>

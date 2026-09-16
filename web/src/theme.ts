@@ -267,6 +267,33 @@ const theme = createTheme({
         },
       },
     },
+    MuiTypography: {
+      defaultProps: {
+        // The app's outline is two levels deep: page titles are `h1` and card /
+        // panel titles are `h2`. MUI's defaults render `variant="h5"` / `"h6"`
+        // as `<h5>` / `<h6>`, so every page started its outline five levels down
+        // and the dashboards would jump h5 (PageHeader) → h2 (ChartCard) → h6
+        // (inline titles), which ascends *and* skips. Remap the title and card
+        // variants to the levels they semantically are so a page outline is
+        // always h1 → h2 and never skips or ascends. Big numeric values
+        // (StatCard, the student Figure, the notice day badge) opt out with an
+        // explicit `component="div"`, because a number is not a heading.
+        // MUI also maps `subtitle1` / `subtitle2` to `<h6>` by default, which
+        // put a spurious heading ahead of the page title (the app-bar label and
+        // the user name render first) and re-introduced a skip after the
+        // section title on notice lists. Those are labels, not headings.
+        variantMapping: {
+          h1: "h1",
+          h2: "h2",
+          h3: "h2",
+          h4: "h2",
+          h5: "h1",
+          h6: "h2",
+          subtitle1: "div",
+          subtitle2: "div",
+        },
+      },
+    },
     MuiAppBar: {
       defaultProps: {
         elevation: 0,

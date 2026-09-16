@@ -33,7 +33,9 @@ function Figure({
       <Typography variant="overline" color="text.secondary">
         {label}
       </Typography>
-      <Typography variant="h3" sx={{ lineHeight: 1.1, color: "secondary.main" }}>
+      {/* A supporting figure is a number, not a heading — keep it out of the
+          document outline (see the theme's `variantMapping`). */}
+      <Typography variant="h3" component="div" sx={{ lineHeight: 1.1, color: "secondary.main" }}>
         {value}
       </Typography>
       {hint ? (

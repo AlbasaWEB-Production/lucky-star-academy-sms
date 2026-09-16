@@ -42,7 +42,9 @@ export default function NoticeCard({
           bgcolor: "rgba(20, 123, 69, 0.06)",
         }}
       >
-        <Typography variant="h5" sx={{ color: "primary.main", lineHeight: 1 }}>
+        {/* The day of month is a number, not a heading — opt it out of the
+            theme's variant mapping so the big bold numeral is a `<div>`. */}
+        <Typography variant="h5" component="div" sx={{ color: "primary.main", lineHeight: 1 }}>
           {day}
         </Typography>
         <Typography

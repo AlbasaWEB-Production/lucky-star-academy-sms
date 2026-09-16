@@ -354,3 +354,94 @@ asserted not to contain a glued unit; and the grade panel was asserted to render
 bars with all six band labels present. The database was queried in the same pass
 to confirm the heat map's `Partial` state genuinely does not occur in the seed
 (§ 6) — the check was mine, not the data's.
+
+---
+
+## 16. Lighthouse mobile: accessibility passes, performance does not
+
+**Decision.** Measured and recorded here rather than tuned. Accessibility meets
+the brief's bar; performance does not, and the reason is understood well enough
+to state rather than guessed at.
+
+**Result** (Lighthouse 13.4.1, `--form-factor=mobile`, production build,
+`next start` on localhost, audited as a real signed-in session per role):
+
+| Dashboard | Performance | Accessibility |
+| --- | --- | --- |
+| `/admin/dashboard` | **61** | **100** |
+| `/teacher/dashboard` | **70** | **100** |
+| `/student/dashboard` | **73** | **100** |
+
+Gate was ≥ 90 on both. **Accessibility passes on all three at 100. Performance
+fails on all three.** Cumulative layout shift is 0 on every dashboard, so the
+failure is not the charts reflowing as they mount.
+
+**What dominates the performance score**, from the metric values rather than the
+overall number: server response time is 1.6–1.8 s and total blocking time is
+700–1170 ms. FCP is comparatively good (0.9–1.3 s), which isolates the cost to
+*time to first byte* plus main-thread work, not to first paint. LCP is 2.7–3.9 s
+and speed index 3.7–4.3 s, i.e. the page becomes usable well after it first
+paints.
+
+**Why the TTFB is high, stated as a cause and not an excuse.** Every dashboard
+awaits Supabase over the network before it can render, and the teacher dashboard
+awaits it in **two sequential rounds** — a `Promise.all` of eight reads, then a
+second `Promise.all` of two whose inputs depend on the first. Each round pays the
+full round trip. This is a real property of the page, not a measurement
+artefact, and it is the honest headline finding: the gate fails because the
+server blocks on remote queries in series.
+
+**Recorded caveat, so this number is not over-read.** The audit ran against a
+local `next start`, so no CDN, no edge caching and no co-located database; a
+deployed environment would serve static assets from a CDN and reach Supabase over
+a much shorter network path. The score is therefore pessimistic. It is reported
+as measured, because the alternative — reporting a number I did not take, or
+quietly omitting a gate I did not meet — is worse than a pessimistic true one.
+
+**Why not optimised in this task.** Closing the gap means restructuring when the
+page is allowed to render — consolidating or parallelising the query rounds,
+streaming the slow cards behind `Suspense` so the shell flushes first, and
+splitting the chart bundle. Each changes how the dashboards load and wants its
+own verification pass, which is a task rather than a follow-up edit. Not begun
+without asking.
+
+**The accessibility defects this audit caught were fixed, not just reported** —
+the second run's 100 is a different measurement from the first run's 95/94/98,
+not a run-to-run wobble:
+
+- `color-contrast` (admin, teacher) — the green `primary` StatCard rendered its
+  overline and hint in `rgba(255,255,255,0.85)` and `0.8`, which composite over
+  `#147b45` to `#dcebe3` (4.31:1) and `#d0e5da` (4.02:1), both under 4.5:1. The
+  two are now opaque enough to clear AA.
+- `heading-order` (all three) — `ChartCard` titles were `<h2>` while the inline
+  card titles beside them were `<h6>`, so the sequence stepped 2 → 6. Fixed in
+  the theme's `variantMapping` (page titles `h1`, card titles `h2`, and the
+  `subtitle1`/`subtitle2` labels that MUI maps to `<h6>` by default demoted to
+  `<div>`), with numeric values opting out via `component="div"` — a number is
+  not a heading.
+- `td-has-header` (teacher, critical) — the at-risk table's data cells carried no
+  header association. `TableShell` renders an action column whose header string
+  is `""`, which produced an empty `<th scope="col">`; every data cell in that
+  column then had a column header with no content. An empty header now renders a
+  visually-hidden "Actions" label, which satisfies both this rule and
+  `empty-table-header` (which needs screen-reader-visible *text*, so an
+  `aria-label` alone fixes only the first — established by running real axe-core
+  against each candidate markup). The fix is in `TableShell`, so it covers all
+  five tables that use an action column, not just the one Lighthouse flagged.
+  (`td-has-header` is an unweighted "insight" audit in Lighthouse 13, so it never
+  lowered the category score — but it is a real defect for a screen-reader user,
+  which is why it is fixed at the source rather than left for the score to
+  forgive.)
+
+**Note on how this was measured, because it is not obvious and cost real time.**
+Lighthouse cannot sign in, and all three dashboards are behind Supabase auth, so
+it would otherwise have audited the login page and scored it as a passing
+dashboard. The cookies were captured from a genuine Playwright login per role and
+passed through `extraHeaders`. Two environment traps made the result hard to
+obtain and are worth writing down: this shell's `PATH` omits `System32`, so
+chrome-launcher's `taskkill` was "not recognised", Chrome survived teardown, and
+the subsequent `rmSync` threw `EPERM` **which masked the real error**; and
+Lighthouse's own Chrome launch should be bypassed entirely by pointing it at a
+Chrome on a CDP port (`--port`), so it neither launches nor kills a browser.
+Reading the overall score alone would have hidden all of this behind three
+plausible-looking numbers.
