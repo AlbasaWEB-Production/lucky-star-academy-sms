@@ -41,6 +41,14 @@ export const BRAND_GREEN = "#147B45";
 /** The deep green used as ink and in the auth/landing brand panels. */
 export const BRAND_GREEN_DARK = "#083E28";
 
+/** The saturated hero/band ground — richer and deeper than BRAND_GREEN, used
+ *  for the landing hero and full-bleed sections. Adds approx. 9:1 contrast with
+ *  white and the warm off-white below. */
+export const HERO_GREEN = "#0B5130";
+
+/** Warm off-white for text on the deep green grounds (reads ≥ 4.5:1 on HERO_GREEN). */
+export const ON_GREEN = "#F4F1E8";
+
 /** Off-white page ground. */
 export const PAGE_BG = "#F7F7F5";
 
@@ -106,8 +114,12 @@ const theme = createTheme({
       fontFamily: DISPLAY_FONT,
       fontVariationSettings: FRAUNCES_SETTINGS,
       fontWeight: 600,
-      fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
-      lineHeight: 1.05,
+      // True display scale: ~40px on a phone, fluid to ~72px on desktop. Only
+      // `variant="h1"` consumes this, and the landing hero is its sole user
+      // (page titles render through `variant="h5"`, the theme's heading tag),
+      // so dashboard/page titles are unaffected.
+      fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+      lineHeight: 1.03,
       letterSpacing: "-0.02em",
     },
     h2: {

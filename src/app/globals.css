@@ -21,3 +21,61 @@ body {
 a {
   color: inherit;
 }
+
+/* ---------------------------------------------------------------------------
+   Homepage utilities
+   --------------------------------------------------------------------------- */
+
+/* Fine film grain, layered over the deep-green bands. Decorative only: the
+   element that carries it is aria-hidden in the markup, and content inside a
+   .grain section sits at z-index 1 so the grain never covers text. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* Reveal-on-scroll. The final state is the base style, so with JavaScript off
+   or prefers-reduced-motion on, everything renders fully visible with no
+   animation at all. Only the "out" state is hidden, and only when the user has
+   not asked for reduced motion. */
+[data-reveal] {
+  transition:
+    opacity 620ms ease,
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal="out"] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* The hand-drawn gold underline beneath the hero keyword. It draws in once on
+   load; with reduced motion the base state is the drawn path, so nothing
+   animates and nothing is hidden. */
+.underline-draw path {
+  stroke-dasharray: 320;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .underline-draw path {
+    animation: gs-draw-underline 900ms 180ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+}
+
+@keyframes gs-draw-underline {
+  from {
+    stroke-dashoffset: 320;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
