@@ -306,6 +306,14 @@ gauge).
 
 ### Phase 5 — Welfare (migration `20260101000800`)
 
+> **Status: built.** Migration applied; `incidents` table and views
+> `v_incidents_by_type` + `v_incidents_per_hundred_by_class` live (admin-only,
+> in-view `jwt_role()` gate); helpers and constants in `src/lib/incidents.ts` +
+> `src/lib/data/welfare.ts`; actions in `src/lib/actions/incidents.ts`; screens
+> `/admin/incidents` (register: record, resolve, delete) and `/teacher/incidents`
+> (their classes only); welfare flag on both pupil progress cards; charts
+> incidents-by-type and per-hundred; RLS suite extended (Section 23, 24 probes).
+
 **Table:** `incidents` — id, school_id, student_id, class_id, date,
 incident_type (`lateness` | `truancy` | `fighting` | `bullying` | `property_damage`
 | `other`), note (short, factual; the form does not prompt for health, family or
