@@ -175,7 +175,13 @@ insert into rls_results (probe, observed, expected) values
        and not exists (
          select 1 from unnest(coalesce(p.proconfig, array[]::text[])) cfg
          where cfg like 'search_path=%'
-       )), 0);
+       )), 0),
+
+  ('every public view is security_invoker', (
+     select count(*) from pg_class c
+     join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'v'
+       and not coalesce(c.reloptions @> array['security_invoker=true'], false)), 0);
 
 
 -- ---------------------------------------------------------------------------
@@ -600,7 +606,112 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 16. Report
+-- 16. Academics (Phase 2) - term-scoped marks and enrolment facts
+-- ---------------------------------------------------------------------------
+-- The four trend views join through exam_results / students / terms, none of
+-- which the finance fixtures above touched. To give them rows to return we have
+-- to term-scope the marks and drop each pupil into a term window. Everything is
+-- done AFTER the finance probes so no count they relied on moves.
+--
+-- It is not enough to test that the views exist. Each must inherit the caller's
+-- RLS (security_invoker) and still scope rows per role, exactly like the base
+-- tables - otherwise a view becomes a side door around the policies.
+
+update public.exam_results
+set term_id = 'a7000000-0000-4000-8000-000000000001'
+where school_id = 'a0000000-0000-4000-8000-000000000001';
+
+-- School B gets its own term-scoped mark so tenant isolation is testable from
+-- the same probes.
+insert into public.exam_results (school_id, student_id, subject_id, term_id, marks_obtained)
+values ('b0000000-0000-4000-8000-000000000001',
+        'b3000000-0000-4000-8000-000000000001',
+        'b5000000-0000-4000-8000-000000000001',
+        'b7000000-0000-4000-8000-000000000001',
+        90);
+
+-- Land every fixture pupil inside its school's Term 1 window (2026-01-01 ..
+-- 2026-04-30) so the enrolment and retention views count it as an active pupil.
+update public.students
+set enrolled_at      = '2026-02-01',
+    status_date      = '2026-02-01',
+    enrolment_status = 'active'
+where id in ('a3000000-0000-4000-8000-000000000001',
+             'a3000000-0000-4000-8000-000000000002',
+             'b3000000-0000-4000-8000-000000000001');
+
+
+-- ---------------------------------------------------------------------------
+-- 17. Academics - admin A (both classes, nothing from school B)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A sees both class-average rows',                (select count(*) from public.v_class_average_trend), 2),
+  ('admin A sees no class-average rows for school B',     (select count(*) from public.v_class_average_trend where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees both pass/promotion rows',               (select count(*) from public.v_pass_promotion_rates), 2),
+  ('admin A sees no pass/promotion rows for school B',    (select count(*) from public.v_pass_promotion_rates where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees both enrolment rows',                    (select count(*) from public.v_enrolment_trend_by_class_campus), 2),
+  ('admin A sees no enrolment rows for school B',         (select count(*) from public.v_enrolment_trend_by_class_campus where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees one retention row',                      (select count(*) from public.v_retention_dropout), 1),
+  ('admin A sees no retention rows for school B',         (select count(*) from public.v_retention_dropout where school_id = 'b0000000-0000-4000-8000-000000000001'), 0);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 18. Academics - teacher A1 (confined to its own class and term)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A1 sees only its own class-average row',      (select count(*) from public.v_class_average_trend), 1),
+  ('teacher A1 sees only its own pass/promotion row',     (select count(*) from public.v_pass_promotion_rates), 1),
+  ('teacher A1 sees only its own enrolment row',          (select count(*) from public.v_enrolment_trend_by_class_campus), 1),
+  ('teacher A1 sees only its own retention row',          (select count(*) from public.v_retention_dropout), 1);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 19. Academics - teacher A2 (same role, different class, opposite result)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A2 sees its own (different) class-average row',  (select count(*) from public.v_class_average_trend), 1),
+  ('teacher A2 cannot see class A1''s class-average row',     (select count(*) from public.v_class_average_trend where class_id = 'a4000000-0000-4000-8000-000000000001'), 0),
+  ('teacher A2 sees only its own pass/promotion row',         (select count(*) from public.v_pass_promotion_rates), 1),
+  ('teacher A2 sees only its own enrolment row',              (select count(*) from public.v_enrolment_trend_by_class_campus), 1),
+  ('teacher A2 sees only its own retention row',              (select count(*) from public.v_retention_dropout), 1);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 20. Academics - student A1 (only its own mark and its own pupil row)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('student A1 sees class-average only for its own mark',   (select count(*) from public.v_class_average_trend), 1),
+  ('student A1 sees pass/promotion only for its own mark',  (select count(*) from public.v_pass_promotion_rates), 1),
+  ('student A1 sees enrolment only for itself',             (select count(*) from public.v_enrolment_trend_by_class_campus), 1),
+  ('student A1 sees retention only for itself',             (select count(*) from public.v_retention_dropout), 1);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 21. Report
 -- ---------------------------------------------------------------------------
 
 select
