@@ -244,6 +244,11 @@ trend (line), progress card figures.
 
 ### Phase 3 — People and teaching operations (migration `20260101000600`)
 
+> **Status: built.** Migration applied; views `v_pupil_teacher_ratio` and
+> `v_teacher_attendance_rate` live (admin-only, in-view `jwt_role()` gate);
+> read helpers in `src/lib/data/people.ts`; screen `/admin/analytics/people`
+> with ratio + attendance charts; RLS suite extended (Section 21, 16 probes).
+
 No new columns. New views and read helpers only:
 - `v_pupil_teacher_ratio` — students per class / distinct teachers per class,
   per campus.
