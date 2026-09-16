@@ -13,6 +13,7 @@ import {
 } from "@/lib/data/academics";
 import { getPupilFeeBalance } from "@/lib/data/finance";
 import { getStudentById } from "@/lib/data/queries";
+import { getUnresolvedIncidentsForPupil } from "@/lib/data/welfare";
 import { formatCedis } from "@/lib/money";
 
 export const metadata = {
@@ -43,11 +44,12 @@ export default async function AdminProgressPage({
     notFound();
   }
 
-  const [terms, attendanceRate, feeBalance, passMark] = await Promise.all([
+  const [terms, attendanceRate, feeBalance, passMark, unresolvedIncidents] = await Promise.all([
     getPupilAcademicProgress(studentId),
     getPupilAttendanceRate(studentId),
     getPupilFeeBalance(studentId),
     getPassMark(),
+    getUnresolvedIncidentsForPupil(studentId),
   ]);
 
   const progressTerms = terms ?? [];
@@ -73,7 +75,7 @@ export default async function AdminProgressPage({
         sx={{
           display: "grid",
           gap: 3,
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(5, 1fr)" },
           mb: 4,
         }}
       >
@@ -100,6 +102,12 @@ export default async function AdminProgressPage({
           value={passMark}
           hint="the school's mark for passing a subject"
           tone="gold"
+        />
+        <StatCard
+          label="Open incidents"
+          value={unresolvedIncidents}
+          hint={unresolvedIncidents > 0 ? "unresolved — on the incident register" : "no open incidents"}
+          tone={unresolvedIncidents > 0 ? "warning" : "deepGreen"}
         />
       </Box>
 

@@ -42,6 +42,7 @@ import CalculateIcon from "@mui/icons-material/Calculate";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import SavingsIcon from "@mui/icons-material/Savings";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import LogoutIcon from "@mui/icons-material/Logout";
 
@@ -65,7 +66,9 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/student/profile": <PersonIcon fontSize="inherit" />,
   "/admin/students": <GroupsIcon fontSize="inherit" />,
   "/admin/admissions": <PersonAddIcon fontSize="inherit" />,
+  "/admin/incidents": <WarningAmberIcon fontSize="inherit" />,
   "/teacher/students": <GroupsIcon fontSize="inherit" />,
+  "/teacher/incidents": <WarningAmberIcon fontSize="inherit" />,
   "/admin/teachers": <SchoolIcon fontSize="inherit" />,
   "/admin/admins": <SchoolIcon fontSize="inherit" />,
   "/admin/classes": <MenuBookIcon fontSize="inherit" />,
@@ -85,6 +88,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/admin/analytics/academics-performance": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/academics-enrolment": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/people": <GroupsIcon fontSize="inherit" />,
+  "/admin/analytics/welfare": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/admissions": <InsightsIcon fontSize="inherit" />,
   "/admin/fees": <AccountBalanceWalletIcon fontSize="inherit" />,
   "/admin/fees/structures": <RequestQuoteIcon fontSize="inherit" />,
