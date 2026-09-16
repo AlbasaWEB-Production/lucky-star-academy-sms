@@ -97,11 +97,22 @@ raw hexes anywhere stay inside chart series).
   buttons, active nav, selected chips, table header tint, focus rings.
 - `secondary.main` `#083E28` (deep green) — **kept as ink**, because it carries
   headings and button text on white. Gold is never swapped in here (contrast).
-- Gold `#F2B705` is **not** a text colour. It appears in exactly these places:
-  1. the gold rule under the hero headline keyword,
-  2. a small gold dash before `.eyebrow` kicker labels on the landing and auth,
-  3. a faint gold "Lucky Star" star watermark in the hero and auth brand panels,
-  4. the gold star of the crest standing alone beside the school name.
+- `HERO_GREEN` `#0B5130` (saturated deep green) — the landing hero and its
+  full-bleed bands. Deeper and richer than the crest green, and about 9:1 with
+  white. `ON_GREEN` `#F4F1E8` (warm off-white) is the text colour on those
+  grounds.
+- Gold `#F2B705` is **not** a text colour on a light ground. It appears in
+  exactly these places:
+  1. the hand-drawn gold rule under the hero headline keyword — an SVG path that
+     draws itself in once,
+  2. a small gold dash before the overline kicker labels,
+  3. the solid gold star seal that overlaps the hero's lower edge onto the
+     portals band,
+  4. the gold fill of the one primary button ("Sign in"), with
+     `BRAND_GREEN_DARK` text on it,
+  5. the gold numeral badges (01 · 02 · 03) on the portal cards, with
+     `BRAND_GREEN_DARK` numerals sitting on the gold,
+  6. the gold star of the crest standing alone beside the school name.
 - Warm neutrals: off-white page `#F7F7F5`, white cards, warm gray `#F0F0EE`
   fills, near-black ink `#1A1A1A`, muted `#6B6B6B`. These become named tokens and
   every hard-coded hex outside a chart is replaced.
@@ -157,23 +168,36 @@ clear caption, not another blank rectangle.
   (my marks, attendance by subject) it is comfortaable with generous padding and
   the value as the focus; notices and subjects read as cards, not as a table.
 
-### 8. Landing concept — "A green dawn" (honouring the standing gradient decision)
+### 8. Landing concept — "Saturated green ground" (superseding "A green dawn")
 
-A full-screen 16:9 hero, per the earlier owner decision:
+The earlier decision here was a soft off-white-to-green gradient hero with faint
+motifs. That gradient's warm end read as white on most screens, which is most of
+what made the page feel flat, so it was **replaced** with a full-bleed deep,
+saturated green ground (`HERO_GREEN`) and the school's motifs in crisp gold. The
+banner's own dark top band is no longer the only thing carrying the contrast.
 
-- **Background:** a soft brand gradient (warm off-white melting into the school
-  green) with **subtle school motifs** — a faint gold "Lucky Star" starburst and
-  a very light crest watermark, low enough contrast to stay calm.
-- **Hero copy** on the left: eyebrow kicker with the gold dash, Fraunces display
-  headline with the gold rule under the keyword, one honest line ("Lucky Star
-  Academy, Yendi · Primary 1–6…"), and two actions (Sign in / Create school).
-- **School photographs** in a rounded, slightly offset collage frame on the right
-  — the real `public/photos/*` images, never stock.
-- **Below:** three redesigned role-portal cards, then a short "this school" line
-  in the school's own words with the crest — no invented statistics, no
-  testimonials, no placeholder copy.
-- **Nav:** logo left, honest links that exist, Sign in + Get started right. The
-  dead `#features` / `#about` anchors and the segmented role chips are gone.
+- **Background:** full-bleed `public/sms_background_image.png` — the school's own
+  banner, which already carries the crest, the school name and the "EST. 2014 ·
+  A DIFFERENCE OF EXCELLENCE" motto as artwork — under a deep-green scrim that is
+  strongest on the left, plus a dark top band so the nav's white links stay
+  legible over the bright school building.
+- **Hero copy** low in the left band, clearing the banner's baked-in crest:
+  overline kicker with the gold dash, Fraunces display headline (`clamp(2.5rem,
+  6vw, 4.5rem)` — ~40px on a phone) with the hand-drawn gold rule under the
+  keyword, one honest line ("Lucky Star Academy, Yendi · Primary 1–6…"), and a
+  **single** action: the gold "Sign in".
+- **A gold star seal** hangs below the hero onto the portals band, so the hero and
+  the band below it are not two sealed boxes.
+- **Below:** the three role-portal cards, each numbered `01 · 02 · 03` on a solid
+  gold badge (gold as a fill, never gold text on white) with the whole card
+  clickable; then a deep-green "this school" band with the crest, the two campus
+  names, and the year — no invented statistics, no testimonials, no placeholder
+  copy. School registration is demoted to a quiet text link in the footer.
+- **Grounds alternate:** hero (deep green) → portals (light) → this school (deep
+  green) → footer (deeper green). No two adjacent sections share a background.
+- **Nav:** no lockup over the hero — the banner's crest is the lockup there — with
+  honest links that exist and Sign in on the right. The lockup fades in when the
+  nav becomes a blurred translucent bar on scroll.
 
 ### 9. Auth + shell read as one product
 
@@ -202,6 +226,6 @@ A full-screen 16:9 hero, per the earlier owner decision:
 
 - The **Fraunces + Hanken Grotesk pairing** (the most visible choice). If you'd
   rather keep an all-grotesque look, I'll swap Fraunces for a warm sans display.
-- The **gradient hero** — I'm restoring it as the earlier decision stands. If you
-  now prefer the current flat-light hero, say so and I'll keep it instead.
-- **Gold placement** (the four spots above). Fine to adjust the list.
+- ~~The **gradient hero**~~ — **decided**: the off-white-to-green gradient was
+  replaced by the saturated green ground in §8. This is what shipped.
+- **Gold placement** (the six spots above). Fine to adjust the list.
