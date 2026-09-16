@@ -711,7 +711,73 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 21. Report
+-- 21. People & teaching (Phase 3) - admin-only views
+-- ---------------------------------------------------------------------------
+-- v_pupil_teacher_ratio and v_teacher_attendance_rate carry the same in-view
+-- jwt_role() = 'admin' gate as the other school-management metrics, so a
+-- teacher or pupil who can legitimately read subjects / profiles school-wide
+-- must still see none of these. School A builds to: classes A1 (1 active pupil
+-- / teacher A1) and A2 (1 active pupil / teacher A2), with a single attendance
+-- record for teacher A1 and none for A2 - both still appear so the "no records
+-- yet" state is surfaced. School B (1 class / 1 teacher / no attendance) proves
+-- the per-tenant shape rather than anything hard-coded to school A.
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A sees the ratio for both its classes',          (select count(*) from public.v_pupil_teacher_ratio), 2),
+  ('admin A sees no ratio rows for school B',              (select count(*) from public.v_pupil_teacher_ratio where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees attendance for both its teachers',        (select count(*) from public.v_teacher_attendance_rate), 2),
+  ('admin A sees no attendance rows for school B',         (select count(*) from public.v_teacher_attendance_rate where school_id = 'b0000000-0000-4000-8000-000000000001'), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A1 sees none of the pupil/teacher ratio',      (select count(*) from public.v_pupil_teacher_ratio), 0),
+  ('teacher A1 sees none of the teacher attendance rate',  (select count(*) from public.v_teacher_attendance_rate), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A2 sees none of the pupil/teacher ratio',      (select count(*) from public.v_pupil_teacher_ratio), 0),
+  ('teacher A2 sees none of the teacher attendance rate',  (select count(*) from public.v_teacher_attendance_rate), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('student A1 sees none of the pupil/teacher ratio',      (select count(*) from public.v_pupil_teacher_ratio), 0),
+  ('student A1 sees none of the teacher attendance rate',  (select count(*) from public.v_teacher_attendance_rate), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"b0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin B sees the ratio for its own class',             (select count(*) from public.v_pupil_teacher_ratio), 1),
+  ('admin B sees no ratio rows for school A',              (select count(*) from public.v_pupil_teacher_ratio where school_id = 'a0000000-0000-4000-8000-000000000001'), 0),
+  ('admin B sees attendance for its own teacher',          (select count(*) from public.v_teacher_attendance_rate), 1),
+  ('admin B sees no attendance rows for school A',         (select count(*) from public.v_teacher_attendance_rate where school_id = 'a0000000-0000-4000-8000-000000000001'), 0);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 22. Report
 -- ---------------------------------------------------------------------------
 
 select
