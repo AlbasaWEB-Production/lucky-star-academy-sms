@@ -44,6 +44,11 @@ export const metadata: Metadata = {
   },
   description:
     "Streamline school management, class organization, attendance tracking and communication between students, teachers and administrators.",
+  icons: {
+    // The school crest from `public/lucky_star_logo.png`, rendered at favicon
+    // size into `src/app/icon.png` (the App Router file convention serves it).
+    icon: "/icon.png",
+  },
 };
 
 export const viewport = {
