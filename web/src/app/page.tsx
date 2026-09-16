@@ -1,24 +1,14 @@
+import Image from "next/image";
 import Link from "@/components/NextLink";
-import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-  type SxProps,
-  type Theme,
-} from "@mui/material";
+import { Box, Button, Container, Paper, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 
 import SetupBanner from "@/components/SetupBanner";
-import SchoolLogo from "@/components/ui/SchoolLogo";
 import SiteFooter from "@/components/ui/SiteFooter";
-import StudentPhotoCollage from "@/components/ui/StudentPhotoCollage";
-import { BRAND_GOLD } from "@/theme";
+import { BRAND_GOLD, BRAND_GREEN_DARK } from "@/theme";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export const metadata = {
@@ -46,160 +36,155 @@ const ROLE_CARDS = [
   },
 ];
 
-/** A faint gold "Lucky Star" starburst, used as a watermark in the hero. */
-function LuckyStarMotif({ sx }: { sx?: SxProps<Theme> }) {
-  return (
-    <Box aria-hidden sx={{ position: "absolute", pointerEvents: "none", color: BRAND_GOLD, ...sx }}>
-      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2l2.9 6.26 6.9.7-5.15 4.6 1.45 6.74L12 16.9 5.9 20.3l1.45-6.74L2.2 8.96l6.9-.7z" />
-      </svg>
-    </Box>
-  );
-}
+/**
+ * White text over the hero banner (the banner's left band is a deep green, so
+ * white passes AA). Gold is reserved for the one bold accent — the primary
+ * CTAs and the underline — never as text on a light ground.
+ */
+const HERO_TEXT = "#FFFFFF";
 
 export default function HomePage() {
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-      {/* Honest top nav: logo left, the one link that exists, Sign in + Get started right. */}
-      <Box
-        component="header"
-        sx={{
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-        }}
-      >
-        <Container
-          maxWidth="lg"
-          sx={{ display: "flex", alignItems: "center", gap: 3, py: 1.5 }}
-        >
-          <SchoolLogo sizes="120px" sx={{ height: 34 }} />
-          <Box
-            component="nav"
-            sx={{ display: { xs: "none", sm: "flex" }, gap: 3, flex: 1 }}
-          >
-            <Typography
-              component={Link}
-              href="#roles"
-              variant="body2"
-              sx={{ color: "text.secondary", textDecoration: "none" }}
-            >
-              Portals
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1.5, ml: "auto" }}>
-            <Button component={Link} href="/login" variant="text" sx={{ color: "text.primary" }}>
-              Sign in
-            </Button>
-            <Button component={Link} href="/register/school" variant="contained">
-              Get started
-            </Button>
-          </Box>
-        </Container>
-      </Box>
-
-      {/* Hero — a full-screen 16:9 brand gradient with subtle school motifs. */}
+      {/* Hero — the school's own banner photograph, full-bleed. The banner already
+          carries the crest and school name, so no separate logo is drawn here. */}
       <Box
         component="section"
         sx={{
           position: "relative",
           overflow: "hidden",
-          minHeight: { xs: "auto", md: "calc(100svh - 64px)" },
+          minHeight: { xs: "auto", md: "100svh" },
           display: "flex",
-          alignItems: "center",
-          background:
-            "linear-gradient(120deg, #F7F7F5 0%, #EAF0E8 42%, rgba(20, 123, 69, 0.16) 100%)",
+          flexDirection: "column",
         }}
       >
-        <LuckyStarMotif sx={{ top: "12%", right: "18%", width: 220, height: 220, opacity: 0.1 }} />
-        <LuckyStarMotif sx={{ bottom: "18%", left: "6%", width: 120, height: 120, opacity: 0.08 }} />
-        <SchoolLogo
-          decorative
-          sizes="560px"
+        <Image
+          src="/sms_background_image.png"
+          alt="Lucky Star Academy pupils collaborating over a robot in the school's ICT room, with the school building and flag behind them"
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center" }}
+        />
+        {/* Legibility scrim across the text band, blending with the banner's own
+            deep green so the headline stays readable over the photograph. */}
+        <Box
+          aria-hidden
           sx={{
             position: "absolute",
-            right: -120,
-            bottom: -120,
-            width: 560,
-            height: 560,
-            opacity: 0.05,
+            inset: 0,
+            background:
+              "linear-gradient(90deg, rgba(8,62,40,0.92) 0%, rgba(8,62,40,0.6) 42%, rgba(8,62,40,0.12) 70%, rgba(8,62,40,0) 100%)",
           }}
         />
 
-        <Container
-          maxWidth="lg"
-          sx={{ py: { xs: 8, md: 12 }, position: "relative", zIndex: 1 }}
-        >
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1, width: "100%" }}>
+          {/* Honest top bar over the hero: the one link that exists, with the two
+              actions. Kept to text/outline so it stays a quiet frame. */}
           <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
-              gap: { xs: 6, md: 8 },
-              alignItems: "center",
-            }}
+            component="header"
+            sx={{ display: "flex", alignItems: "center", gap: 3, py: 2 }}
           >
-            <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-                <Box sx={{ width: 24, height: 2, backgroundColor: BRAND_GOLD }} />
-                <Typography variant="overline" sx={{ color: "text.secondary" }}>
-                  Lucky Star Academy &middot; Yendi, Ghana
-                </Typography>
-              </Box>
-
+            <Box component="nav" sx={{ display: { xs: "none", sm: "flex" }, gap: 3, flex: 1 }}>
               <Typography
-                component="h1"
-                variant="h1"
-                sx={{ mb: 3, color: "text.primary" }}
+                component={Link}
+                href="#roles"
+                variant="body2"
+                sx={{ color: HERO_TEXT, textDecoration: "none" }}
               >
-                School management, streamlined for{" "}
-                <Box
-                  component="span"
-                  sx={{
-                    borderBottom: `3px solid ${BRAND_GOLD}`,
-                    paddingBottom: 2,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  every classroom.
-                </Box>
+                Portals
               </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{ color: "text.secondary", maxWidth: 520, mb: 4 }}
+            </Box>
+            <Box sx={{ display: "flex", gap: 1.5, ml: "auto" }}>
+              <Button component={Link} href="/login" variant="text" sx={{ color: HERO_TEXT }}>
+                Sign in
+              </Button>
+              <Button
+                component={Link}
+                href="/register/school"
+                variant="outlined"
+                sx={{
+                  color: HERO_TEXT,
+                  borderColor: "rgba(255,255,255,0.7)",
+                  "&:hover": { borderColor: HERO_TEXT, backgroundColor: "rgba(255,255,255,0.08)" },
+                }}
               >
-                Lucky Star Academy, Yendi &middot; Primary 1–6. Class organization,
-                attendance, exam marks and communication — one place for students,
-                teachers and administrators.
+                Get started
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Hero copy, sitting on the banner's deep-green band. */}
+          <Box sx={{ py: { xs: 8, md: 14 }, maxWidth: { xs: "100%", md: 560 } }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+              <Box sx={{ width: 24, height: 2, backgroundColor: BRAND_GOLD }} />
+              <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.85)" }}>
+                Lucky Star Academy &middot; Yendi, Ghana
               </Typography>
-
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button
-                  component={Link}
-                  href="/login"
-                  variant="contained"
-                  size="large"
-                  endIcon={<ArrowForwardIcon />}
-                >
-                  Sign in
-                </Button>
-                <Button
-                  component={Link}
-                  href="/register/school"
-                  variant="outlined"
-                  size="large"
-                  sx={{ color: "text.primary", borderColor: "divider" }}
-                >
-                  Create school
-                </Button>
-              </Stack>
-
-              <Box sx={{ mt: 5 }}>
-                <SetupBanner configured={isSupabaseConfigured()} />
-              </Box>
             </Box>
 
-            <StudentPhotoCollage />
+            <Typography
+              component="h1"
+              variant="h1"
+              sx={{ mb: 3, color: HERO_TEXT }}
+            >
+              School management, streamlined for{" "}
+              <Box
+                component="span"
+                sx={{
+                  borderBottomWidth: 3,
+                  borderBottomStyle: "solid",
+                  borderBottomColor: BRAND_GOLD,
+                  paddingBottom: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                every classroom.
+              </Box>
+            </Typography>
+
+            <Typography
+              variant="body1"
+              sx={{ color: "rgba(255,255,255,0.92)", maxWidth: 520, mb: 4 }}
+            >
+              Lucky Star Academy, Yendi &middot; Primary 1–6. Class organization,
+              attendance, exam marks and communication — one place for students,
+              teachers and administrators.
+            </Typography>
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <Button
+                component={Link}
+                href="/login"
+                variant="contained"
+                size="large"
+                sx={{
+                  backgroundColor: BRAND_GOLD,
+                  color: BRAND_GREEN_DARK,
+                  "&:hover": { backgroundColor: BRAND_GOLD },
+                }}
+                endIcon={<ArrowForwardIcon />}
+              >
+                Sign in
+              </Button>
+              <Button
+                component={Link}
+                href="/register/school"
+                variant="outlined"
+                size="large"
+                sx={{
+                  color: HERO_TEXT,
+                  borderColor: "rgba(255,255,255,0.7)",
+                  "&:hover": { borderColor: HERO_TEXT, backgroundColor: "rgba(255,255,255,0.08)" },
+                }}
+              >
+                Create school
+              </Button>
+            </Stack>
+
+            <Box sx={{ mt: 5 }}>
+              <SetupBanner configured={isSupabaseConfigured()} />
+            </Box>
           </Box>
         </Container>
       </Box>
@@ -285,11 +270,6 @@ export default function HomePage() {
         sx={{ py: { xs: 6, md: 10 }, textAlign: "center", backgroundColor: "background.paper" }}
       >
         <Container maxWidth="lg">
-          <SchoolLogo
-            decorative
-            sizes="80px"
-            sx={{ height: 56, mx: "auto", mb: 2, display: "block" }}
-          />
           <Typography variant="h4" sx={{ color: "secondary.main", mb: 1 }}>
             Lucky Star Academy, Yendi
           </Typography>
