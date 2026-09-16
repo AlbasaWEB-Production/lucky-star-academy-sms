@@ -82,6 +82,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/student/complaints": <ReportGmailerrorredIcon fontSize="inherit" />,
   "/admin/analytics/academics-performance": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/academics-enrolment": <InsightsIcon fontSize="inherit" />,
+  "/admin/analytics/people": <GroupsIcon fontSize="inherit" />,
   "/admin/fees": <AccountBalanceWalletIcon fontSize="inherit" />,
   "/admin/fees/structures": <RequestQuoteIcon fontSize="inherit" />,
   "/admin/fees/assessments": <CalculateIcon fontSize="inherit" />,
