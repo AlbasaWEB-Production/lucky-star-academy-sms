@@ -379,6 +379,198 @@ export type Database = {
         };
         Relationships: [];
       };
+      fee_assessments: {
+        Row: {
+          amount: number;
+          class_id: string;
+          created_at: string;
+          due_date: string | null;
+          id: string;
+          school_id: string;
+          student_id: string;
+          term_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          class_id: string;
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          school_id: string;
+          student_id: string;
+          term_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          class_id?: string;
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          term_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      fee_payments: {
+        Row: {
+          amount: number;
+          assessment_id: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          is_reversal: boolean;
+          method: string;
+          payment_date: string;
+          receipt_number: number;
+          reversal_reason: string | null;
+          reverses_payment_id: string | null;
+          school_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          assessment_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_reversal?: boolean;
+          method: string;
+          payment_date?: string;
+          receipt_number?: number;
+          reversal_reason?: string | null;
+          reverses_payment_id?: string | null;
+          school_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          assessment_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_reversal?: boolean;
+          method?: string;
+          payment_date?: string;
+          receipt_number?: number;
+          reversal_reason?: string | null;
+          reverses_payment_id?: string | null;
+          school_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      fee_structures: {
+        Row: {
+          amount: number;
+          class_id: string;
+          created_at: string;
+          description: string;
+          due_date: string | null;
+          id: string;
+          school_id: string;
+          term_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          class_id: string;
+          created_at?: string;
+          description: string;
+          due_date?: string | null;
+          id?: string;
+          school_id: string;
+          term_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          class_id?: string;
+          created_at?: string;
+          description?: string;
+          due_date?: string | null;
+          id?: string;
+          school_id?: string;
+          term_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      budget_lines: {
+        Row: {
+          budget_amount: number;
+          cost_centre: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          school_id: string;
+          term_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          budget_amount: number;
+          cost_centre: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          school_id: string;
+          term_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          budget_amount?: number;
+          cost_centre?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          school_id?: string;
+          term_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      expenses: {
+        Row: {
+          amount: number;
+          cost_centre: string;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          expense_date: string;
+          id: string;
+          school_id: string;
+          term_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          cost_centre: string;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          expense_date?: string;
+          id?: string;
+          school_id: string;
+          term_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          cost_centre?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          expense_date?: string;
+          id?: string;
+          school_id?: string;
+          term_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       student_directory: {
@@ -456,6 +648,73 @@ export type Database = {
           subject_count: number;
           teacher_id: string | null;
           teacher_name: string;
+        };
+        Relationships: [];
+      };
+      v_fee_status_by_student: {
+        Row: {
+          amount_due: number;
+          balance: number;
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          due_date: string | null;
+          paid: number;
+          school_id: string;
+          student_id: string;
+          student_name: string;
+          term_id: string;
+        };
+        Relationships: [];
+      };
+      v_fees_collected_vs_expected: {
+        Row: {
+          avg_days_to_pay: number | null;
+          collected_pesewas: number;
+          collection_rate: number | null;
+          expected_pesewas: number;
+          school_id: string;
+          start_date: string | null;
+          term_id: string;
+          term_name: string;
+        };
+        Relationships: [];
+      };
+      v_outstanding_by_class: {
+        Row: {
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          collected_pesewas: number;
+          expected_pesewas: number;
+          outstanding_pesewas: number;
+          pupils_with_assessment: number;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+        };
+        Relationships: [];
+      };
+      v_budget_vs_actual: {
+        Row: {
+          actual_pesewas: number;
+          budget_pesewas: number;
+          cost_centre: string;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+          variance_pesewas: number;
+        };
+        Relationships: [];
+      };
+      v_cash_position: {
+        Row: {
+          expenses_pesewas: number;
+          income_pesewas: number;
+          month: string;
+          net_pesewas: number;
+          running_balance_pesewas: number;
+          school_id: string;
         };
         Relationships: [];
       };
@@ -552,5 +811,17 @@ export type EnrolmentByCampus = Views<"v_enrolment_by_campus">;
 export type AttendanceHeatmapRow = Views<"v_attendance_heatmap">;
 export type TeacherSubjectLoad = Views<"v_teacher_subject_load">;
 export type GradeDistributionRow = Views<"v_grade_distribution">;
+
+// Phase 1 - fees and finance (amounts are integer pesewas; see src/lib/money).
+export type FeeStructure = Tables<"fee_structures">;
+export type FeeAssessment = Tables<"fee_assessments">;
+export type FeePayment = Tables<"fee_payments">;
+export type BudgetLine = Tables<"budget_lines">;
+export type Expense = Tables<"expenses">;
+export type FeeStatusByStudent = Views<"v_fee_status_by_student">;
+export type FeesCollectedVsExpected = Views<"v_fees_collected_vs_expected">;
+export type OutstandingByClass = Views<"v_outstanding_by_class">;
+export type BudgetVsActual = Views<"v_budget_vs_actual">;
+export type CashPosition = Views<"v_cash_position">;
 
 export type AtRiskPupil = Functions<"fn_at_risk_pupils">;

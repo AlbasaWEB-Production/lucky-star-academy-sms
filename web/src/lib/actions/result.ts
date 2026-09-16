@@ -50,6 +50,16 @@ export function describeDatabaseError(error: { code?: string; message: string })
     if (error.message.includes("schools_slug_key")) {
       return "A school with a similar name already exists.";
     }
+    // Phase 1 - fees and finance
+    if (error.message.includes("fee_structures_school_class_term_description_key")) {
+      return "A fee structure for that class, term and description already exists.";
+    }
+    if (error.message.includes("fee_assessments_student_term_key")) {
+      return "That pupil already has an assessment for this term.";
+    }
+    if (error.message.includes("budget_lines_school_term_cost_centre_description_key")) {
+      return "A budget line for that term and cost centre already exists.";
+    }
     return "That record already exists.";
   }
 
