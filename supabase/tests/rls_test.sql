@@ -885,7 +885,115 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 23. Report
+-- 23. Welfare (Phase 5) - the incident register and its admin-only views
+-- ---------------------------------------------------------------------------
+-- incidents is a behavioural register: one row per incident against a pupil,
+-- admin-only for record/resolve/delete (there is no teacher or student write
+-- policy). Reads scope per role: admin full, teacher classes they teach, pupil
+-- own only. Both views are admin-only via their in-view `jwt_role() = 'admin'`
+-- gate, so a teacher or pupil who can legitimately read their own rows must
+-- still see none of the aggregated numbers. School A builds to 3 incidents
+-- (A1: 2, A2: 1), School B to 1 in its single class, so tenant isolation and
+-- per-class rates are both provable: A1 = 2 incidents / 1 active pupil → 200
+-- per hundred, A2 = 1/1 → 100, B1 = 1/1 → 100.
+
+-- Incidents, inserted by the owner (RLS is bypassed); the policies are what the
+-- probes below exercise. The resolved row carries its resolved_on (the check
+-- constraint requires it), and every row satisfies the composite FKs to
+-- students and classes.
+insert into public.incidents
+  (id, school_id, student_id, class_id, date, incident_type, note, resolved, resolved_on) values
+  ('aa000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', '2026-02-01', 'lateness',          'Arrived after the bell', true,  '2026-02-03'),
+  ('aa000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', '2026-02-10', 'fighting',           'Pushed a classmate',    false, null),
+  ('aa000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000002', 'a4000000-0000-4000-8000-000000000002', '2026-02-12', 'truancy',            'Missed morning lessons', false, null),
+  ('bb000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'b3000000-0000-4000-8000-000000000001', 'b4000000-0000-4000-8000-000000000001', '2026-02-14', 'bullying',           'Taunted a classmate',   false, null);
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A sees its own incidents',                (select count(*) from public.incidents where school_id = 'a0000000-0000-4000-8000-000000000001'), 3),
+  ('admin A sees no incidents for school B',        (select count(*) from public.incidents where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees all six incident types',           (select count(*) from public.v_incidents_by_type), 6),
+  ('admin A by-type counts its own lateness',       (select incident_count from public.v_incidents_by_type where incident_type = 'lateness'), 1),
+  ('admin A by-type resolved/unresolved split',     (select unresolved_count from public.v_incidents_by_type where incident_type = 'fighting'), 1),
+  ('admin A sees both classes by rate',             (select count(*) from public.v_incidents_per_hundred_by_class), 2),
+  ('admin A rate for class A1',                     (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'a4000000-0000-4000-8000-000000000001'), 200),
+  ('admin A rate for class A2',                     (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'a4000000-0000-4000-8000-000000000002'), 100);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A1 sees incidents only in its class',    (select count(*) from public.incidents where class_id = 'a4000000-0000-4000-8000-000000000001'), 2),
+  ('teacher A1 sees no class A2 incidents',          (select count(*) from public.incidents where class_id = 'a4000000-0000-4000-8000-000000000002'), 0),
+  ('teacher A1 sees no school B incidents',          (select count(*) from public.incidents where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('teacher A1 sees no incidents by type view',      (select count(*) from public.v_incidents_by_type), 0);
+
+do $$
+begin
+  begin
+    insert into public.incidents (school_id, student_id, class_id, incident_type)
+    values ('a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'lateness');
+    insert into rls_results values ('teacher A1 CANNOT record an incident', 1, 0);
+  exception when others then
+    insert into rls_results values ('teacher A1 CANNOT record an incident', 0, 0);
+  end;
+end;
+$$;
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A2 sees incidents only in its class',    (select count(*) from public.incidents where class_id = 'a4000000-0000-4000-8000-000000000002'), 1),
+  ('teacher A2 sees no class A1 incidents',          (select count(*) from public.incidents where class_id = 'a4000000-0000-4000-8000-000000000001'), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('student A1 sees only its own incidents',         (select count(*) from public.incidents where student_id = 'a3000000-0000-4000-8000-000000000001'), 2),
+  ('student A1 sees no classmate''s incidents',      (select count(*) from public.incidents where student_id = 'a3000000-0000-4000-8000-000000000002'), 0),
+  ('student A1 sees no school B incidents',          (select count(*) from public.incidents where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('student A1 sees no incidents by type view',      (select count(*) from public.v_incidents_by_type), 0),
+  ('student A1 sees no incidents per hundred view',  (select count(*) from public.v_incidents_per_hundred_by_class), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"b0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin B sees its own incidents',                 (select count(*) from public.incidents where school_id = 'b0000000-0000-4000-8000-000000000001'), 1),
+  ('admin B sees no incidents for school A',         (select count(*) from public.incidents where school_id = 'a0000000-0000-4000-8000-000000000001'), 0),
+  ('admin B sees its own class rate',                (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'b4000000-0000-4000-8000-000000000001'), 100);
+
+-- Positive control: admin A CAN record an incident, proving the teacher denial
+-- above was the policy working and not the insert being broken. Done after the
+-- role probes so it cannot shift the counts a teacher or student relied on.
+insert into public.incidents (id, school_id, student_id, class_id, incident_type)
+values ('aa000000-0000-4000-8000-000000000099', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'lateness');
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A CAN record an incident (control)', (select count(*) from public.incidents where school_id = 'a0000000-0000-4000-8000-000000000001'), 4);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 24. Report
 -- ---------------------------------------------------------------------------
 
 select
