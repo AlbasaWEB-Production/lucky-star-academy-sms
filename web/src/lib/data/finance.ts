@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentTerm } from "@/lib/data/dashboard";
 
 /**
  * Finance read layer.
@@ -495,6 +496,43 @@ export async function listFeeStatusByStudent(termId: string): Promise<FeeStatusB
     balancePesewas: Number(row.balance),
     dueDate: row.due_date,
   }));
+}
+
+/**
+ * One pupil's fee balance for the current term, read from the same
+ * `v_fee_status_by_student` view the finance screens use.
+ *
+ * `null` when the pupil has no assessment in the current term (or no term is in
+ * session), so the progress card can show "no assessment" rather than a
+ * fabricated `0` balance. RLS scopes it: an admin sees the child, a teacher only
+ * a child in a class they teach, and a pupil only their own row.
+ */
+export async function getPupilFeeBalance(
+  studentId: string,
+): Promise<{ amountDuePesewas: number; paidPesewas: number; balancePesewas: number } | null> {
+  const supabase = await createSupabaseServerClient();
+  const currentTerm = await getCurrentTerm();
+
+  if (!currentTerm) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("v_fee_status_by_student")
+    .select("amount_due, paid, balance")
+    .eq("student_id", studentId)
+    .eq("term_id", currentTerm.id)
+    .maybeSingle();
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    amountDuePesewas: Number(data.amount_due),
+    paidPesewas: Number(data.paid),
+    balancePesewas: Number(data.balance),
+  };
 }
 
 /** Fees collected vs expected per term, for the collected-vs-expected chart. */

@@ -41,8 +41,8 @@ export function describeDatabaseError(error: { code?: string; message: string })
     if (error.message.includes("attendance_student_subject_date_key")) {
       return "Attendance for that student, subject and date has already been recorded.";
     }
-    if (error.message.includes("exam_results_student_subject_key")) {
-      return "Marks for that student and subject have already been recorded.";
+    if (error.message.includes("exam_results_student_subject_term_key")) {
+      return "Marks for that student, subject and term have already been recorded.";
     }
     if (error.message.includes("teacher_attendance_teacher_date_key")) {
       return "Attendance for that teacher on that date has already been recorded.";

@@ -141,6 +141,7 @@ export type Database = {
           school_id: string;
           student_id: string;
           subject_id: string;
+          term_id: string | null;
           updated_at: string;
         };
         Insert: {
@@ -150,6 +151,7 @@ export type Database = {
           school_id: string;
           student_id: string;
           subject_id: string;
+          term_id?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -159,6 +161,7 @@ export type Database = {
           school_id?: string;
           student_id?: string;
           subject_id?: string;
+          term_id?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -257,25 +260,34 @@ export type Database = {
         Row: {
           class_id: string;
           created_at: string;
+          enrolled_at: string | null;
+          enrolment_status: string;
           id: string;
           roll_number: number;
           school_id: string;
+          status_date: string | null;
           updated_at: string;
         };
         Insert: {
           class_id: string;
           created_at?: string;
+          enrolled_at?: string | null;
+          enrolment_status?: string;
           id: string;
           roll_number: number;
           school_id: string;
+          status_date?: string | null;
           updated_at?: string;
         };
         Update: {
           class_id?: string;
           created_at?: string;
+          enrolled_at?: string | null;
+          enrolment_status?: string;
           id?: string;
           roll_number?: number;
           school_id?: string;
+          status_date?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -715,6 +727,61 @@ export type Database = {
           net_pesewas: number;
           running_balance_pesewas: number;
           school_id: string;
+        };
+        Relationships: [];
+      };
+      v_class_average_trend: {
+        Row: {
+          avg_mark: number | null;
+          class_id: string;
+          class_name: string;
+          marks_count: number;
+          pupils_assessed: number;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+          term_number: number;
+        };
+        Relationships: [];
+      };
+      v_enrolment_trend_by_class_campus: {
+        Row: {
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          enrolled: number;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+          term_number: number;
+        };
+        Relationships: [];
+      };
+      v_pass_promotion_rates: {
+        Row: {
+          assessed_pupils: number;
+          class_id: string;
+          class_name: string;
+          passed_marks: number;
+          pass_rate_percent: number | null;
+          promotion_rate_percent: number | null;
+          promoted_pupils: number;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+          total_marks: number;
+        };
+        Relationships: [];
+      };
+      v_retention_dropout: {
+        Row: {
+          changes_total: number;
+          left_school: number;
+          retained: number;
+          school_id: string;
+          term_id: string;
+          term_name: string;
+          term_number: number;
         };
         Relationships: [];
       };

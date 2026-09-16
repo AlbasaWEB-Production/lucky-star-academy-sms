@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireStaffWithTenant } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentTerm } from "@/lib/data/dashboard";
 import {
   describeDatabaseError,
   fail,
@@ -182,6 +183,13 @@ export async function saveSubjectMarksAction(
 
   const subjectId = readString(formData, "subjectId");
   const entries = parseEntries<MarksEntry>(readString(formData, "entries"));
+  // An optional term scopes the mark so a pupil keeps a per-term history. The
+  // marking screens need no term selector - the current term is resolved here so
+  // a re-enter updates the same term-scoped row (and never a legacy null-term
+  // duplicate) once a school has terms configured.
+  const explicitTermId = readString(formData, "termId");
+  const currentTerm = await getCurrentTerm();
+  const termId = explicitTermId ?? currentTerm?.id ?? null;
 
   if (!subjectId) {
     return fail("Missing subject.");
@@ -211,12 +219,13 @@ export async function saveSubjectMarksAction(
     school_id: subject.school_id,
     student_id: entry.studentId,
     subject_id: subject.id,
+    term_id: termId,
     marks_obtained: entry.marks,
   }));
 
   const { error } = await supabase
     .from("exam_results")
-    .upsert(rows, { onConflict: "student_id,subject_id" });
+    .upsert(rows, { onConflict: "student_id,subject_id,term_id" });
 
   if (error) {
     return fail(describeDatabaseError(error));
