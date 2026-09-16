@@ -65,7 +65,12 @@ export default function PeopleBreakdown({
           <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
           <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={120} />
           <Tooltip />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={32}>
+          <Bar
+            dataKey="value"
+            radius={[0, 4, 4, 0]}
+            maxBarSize={32}
+            isAnimationActive={false}
+          >
             {data.map((entry) => (
               <Cell key={entry.name} fill={entry.color} />
             ))}

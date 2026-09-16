@@ -104,7 +104,13 @@ export default function QuestionBarChart({
               width={120}
             />
             <Tooltip formatter={(value) => [`${value}${unitSuffix}`, question]} />
-            <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} maxBarSize={28}>
+            <Bar
+              dataKey="value"
+              fill={color}
+              radius={[0, 4, 4, 0]}
+              maxBarSize={28}
+              isAnimationActive={false}
+            >
               <LabelList
                 dataKey="value"
                 position="right"
@@ -131,7 +137,13 @@ export default function QuestionBarChart({
               tickFormatter={tickFormatter}
             />
             <Tooltip formatter={(value) => [`${value}${unitSuffix}`, question]} />
-            <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={64}>
+            <Bar
+              dataKey="value"
+              fill={color}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={64}
+              isAnimationActive={false}
+            >
               <LabelList
                 dataKey="value"
                 position="top"
