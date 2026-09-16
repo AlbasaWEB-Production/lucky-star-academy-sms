@@ -46,6 +46,17 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       ],
     },
     {
+      heading: "Finance",
+      items: [
+        { label: "Fee overview", href: "/admin/fees" },
+        { label: "Structures", href: "/admin/fees/structures" },
+        { label: "Assessments", href: "/admin/fees/assessments" },
+        { label: "Payments", href: "/admin/fees/payments" },
+        { label: "Budget", href: "/admin/fees/budget" },
+        { label: "Expenses", href: "/admin/fees/expenses" },
+      ],
+    },
+    {
       heading: "Communication",
       items: [
         { label: "Notices", href: "/admin/notices" },
@@ -86,6 +97,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       items: [
         { label: "My subjects", href: "/student/subjects" },
         { label: "My attendance", href: "/student/attendance" },
+        { label: "My fees", href: "/student/finance" },
       ],
     },
     {

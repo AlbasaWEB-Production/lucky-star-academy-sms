@@ -19,9 +19,10 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
+import { formatCedis } from "@/lib/money";
 
 /** How a column's value is rendered, sorted and exported. */
-export type DataTableColumnType = "text" | "number" | "percent" | "date";
+export type DataTableColumnType = "text" | "number" | "percent" | "date" | "money";
 
 export type DataTableColumn = {
   /** Key into each row object. Must match a key the server actually sends. */
@@ -45,6 +46,11 @@ function displayValue(value: DataTableRow[string], type: DataTableColumnType): s
       return typeof value === "number" ? value.toLocaleString() : String(value);
     case "percent":
       return `${value}%`;
+    case "money":
+      // Rendered through the single money formatter, so a table of amounts
+      // reads as Ghana cedis exactly like the cards and charts do. The raw
+      // value stays integer pesewas for sorting (numeric, below).
+      return formatCedis(Number(value));
     case "date":
       return new Date(String(value)).toLocaleDateString();
     default:
@@ -53,7 +59,9 @@ function displayValue(value: DataTableRow[string], type: DataTableColumnType): s
 }
 
 function compare(a: DataTableRow[string], b: DataTableRow[string], type: DataTableColumnType): number {
-  if (type === "number" || type === "percent") {
+  if (type === "number" || type === "percent" || type === "money") {
+    // Money sorts by the integer pesewas it carries, not by its formatted text,
+    // so "GH¢ 1,200.00" always sorts after "GH¢ 900.00".
     return (Number(a) || 0) - (Number(b) || 0);
   }
 
@@ -65,16 +73,26 @@ function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+/** The cell's CSV value: the raw number for most types, ce formatted for money. */
+function csvValue(column: DataTableColumn, row: DataTableRow): string {
+  const value = row[column.key];
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (column.type === "money") {
+    // Money exports as the cedi string, not integer pesewas, so a spreadsheet
+    // reader sees "GH¢ 1,200.00" rather than "120000".
+    return formatCedis(Number(value));
+  }
+  // Everywhere else, export the raw value: a spreadsheet wants the number, not
+  // "1,234" or "87.5%".
+  return String(value);
+}
+
 function toCsv(columns: DataTableColumn[], rows: DataTableRow[]): string {
   const header = columns.map((column) => csvCell(column.label)).join(",");
 
-  const body = rows.map((row) =>
-    columns
-      // Export the raw value, not the display value: a spreadsheet wants the
-      // number, not "1,234" or "87.5%".
-      .map((column) => csvCell(row[column.key] === null || row[column.key] === undefined ? "" : String(row[column.key])))
-      .join(","),
-  );
+  const body = rows.map((row) => columns.map((column) => csvCell(csvValue(column, row))).join(","));
 
   return [header, ...body].join("\r\n");
 }
