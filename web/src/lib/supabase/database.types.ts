@@ -785,6 +785,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_pupil_teacher_ratio: {
+        Row: {
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          pupil_count: number;
+          ratio: number | null;
+          school_id: string;
+          teacher_count: number;
+        };
+        Relationships: [];
+      };
+      v_teacher_attendance_rate: {
+        Row: {
+          absent_total: number;
+          present_total: number;
+          rate_percent: number | null;
+          recorded_days: number;
+          school_id: string;
+          teacher_id: string;
+          teacher_name: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       fn_at_risk_pupils: {
@@ -890,5 +914,9 @@ export type FeesCollectedVsExpected = Views<"v_fees_collected_vs_expected">;
 export type OutstandingByClass = Views<"v_outstanding_by_class">;
 export type BudgetVsActual = Views<"v_budget_vs_actual">;
 export type CashPosition = Views<"v_cash_position">;
+
+// Phase 3 - people and teaching.
+export type PupilTeacherRatio = Views<"v_pupil_teacher_ratio">;
+export type TeacherAttendanceRate = Views<"v_teacher_attendance_rate">;
 
 export type AtRiskPupil = Functions<"fn_at_risk_pupils">;
