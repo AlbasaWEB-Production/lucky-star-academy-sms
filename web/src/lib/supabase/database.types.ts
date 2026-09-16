@@ -649,6 +649,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      incidents: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          date: string;
+          id: string;
+          incident_type: string;
+          note: string | null;
+          recorded_by: string | null;
+          resolved: boolean;
+          resolved_on: string | null;
+          school_id: string;
+          student_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          incident_type: string;
+          note?: string | null;
+          recorded_by?: string | null;
+          resolved?: boolean;
+          resolved_on?: string | null;
+          school_id: string;
+          student_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          incident_type?: string;
+          note?: string | null;
+          recorded_by?: string | null;
+          resolved?: boolean;
+          resolved_on?: string | null;
+          school_id?: string;
+          student_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       student_directory: {
@@ -856,6 +901,26 @@ export type Database = {
           conversion_percent: number;
           leads: number;
           stage: string;
+        };
+        Relationships: [];
+      };
+      v_incidents_by_type: {
+        Row: {
+          incident_count: number;
+          incident_type: string;
+          resolved_count: number;
+          unresolved_count: number;
+        };
+        Relationships: [];
+      };
+      v_incidents_per_hundred_by_class: {
+        Row: {
+          active_pupils: number;
+          campus: string | null;
+          class_id: string;
+          class_name: string;
+          incidents: number;
+          per_hundred: number | null;
         };
         Relationships: [];
       };
