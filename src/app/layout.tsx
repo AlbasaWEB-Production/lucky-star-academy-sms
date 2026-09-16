@@ -44,11 +44,10 @@ export const metadata: Metadata = {
   },
   description:
     "Streamline school management, class organization, attendance tracking and communication between students, teachers and administrators.",
-  icons: {
-    // The school crest from `public/lucky_star_logo.png`, rendered at favicon
-    // size into `src/app/icon.png` (the App Router file convention serves it).
-    icon: "/icon.png",
-  },
+  // The favicon, icon, and apple-icon are the school crest derived from
+  // `public/lucky_star_logo.png` and served as `favicon.ico`, `icon.png`, and
+  // `apple-icon.png` in this `app/` directory via the App Router file
+  // conventions, so no explicit `icons` metadata is needed here.
 };
 
 export const viewport = {
