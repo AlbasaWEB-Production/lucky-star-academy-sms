@@ -28,6 +28,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupsIcon from "@mui/icons-material/Groups";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import EventNoteIcon from "@mui/icons-material/EventNote";
@@ -63,6 +64,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/teacher/profile": <PersonIcon fontSize="inherit" />,
   "/student/profile": <PersonIcon fontSize="inherit" />,
   "/admin/students": <GroupsIcon fontSize="inherit" />,
+  "/admin/admissions": <PersonAddIcon fontSize="inherit" />,
   "/teacher/students": <GroupsIcon fontSize="inherit" />,
   "/admin/teachers": <SchoolIcon fontSize="inherit" />,
   "/admin/admins": <SchoolIcon fontSize="inherit" />,
@@ -83,6 +85,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/admin/analytics/academics-performance": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/academics-enrolment": <InsightsIcon fontSize="inherit" />,
   "/admin/analytics/people": <GroupsIcon fontSize="inherit" />,
+  "/admin/analytics/admissions": <InsightsIcon fontSize="inherit" />,
   "/admin/fees": <AccountBalanceWalletIcon fontSize="inherit" />,
   "/admin/fees/structures": <RequestQuoteIcon fontSize="inherit" />,
   "/admin/fees/assessments": <CalculateIcon fontSize="inherit" />,

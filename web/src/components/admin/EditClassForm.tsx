@@ -15,7 +15,7 @@ import { initialFormResult } from "@/lib/actions/result";
 export default function EditClassForm({
   classRecord,
 }: {
-  classRecord: { id: string; name: string };
+  classRecord: { id: string; name: string; capacity: number | null };
 }) {
   const [state, formAction, isPending] = useActionState(updateClassAction, initialFormResult);
 
@@ -36,6 +36,17 @@ export default function EditClassForm({
         required
         fullWidth
         margin="normal"
+      />
+
+      <TextField
+        name="capacity"
+        label="Seat capacity"
+        type="number"
+        slotProps={{ htmlInput: { min: 1 } }}
+        defaultValue={classRecord.capacity ?? ""}
+        fullWidth
+        margin="normal"
+        helperText="How many pupils the class can take. Leave empty to record no capacity yet; the admissions chart shows it as “not set”."
       />
 
       <Button type="submit" variant="contained" size="large" disabled={isPending} sx={{ mt: 3 }}>

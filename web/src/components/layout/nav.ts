@@ -32,6 +32,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       heading: "People",
       items: [
         { label: "Students", href: "/admin/students" },
+        { label: "Admissions", href: "/admin/admissions" },
         { label: "Teachers", href: "/admin/teachers" },
         { label: "Administrators", href: "/admin/admins" },
       ],
@@ -51,6 +52,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
         { label: "Performance", href: "/admin/analytics/academics-performance" },
         { label: "Enrolment", href: "/admin/analytics/academics-enrolment" },
         { label: "People", href: "/admin/analytics/people" },
+        { label: "Admissions", href: "/admin/analytics/admissions" },
       ],
     },
     {
