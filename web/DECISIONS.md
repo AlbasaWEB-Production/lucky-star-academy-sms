@@ -291,3 +291,66 @@ verified after scoping, 20 attendance entries and 3 marks.
 **Consequence recorded for the future:** if a pupil-facing widget ever needs a
 class figure — a rank, a percentile — it must be a **new** view with its own
 audience in mind, not a widening of one of these.
+
+---
+
+## 15. Three rendering defects were fixed after re-shooting the screenshots
+
+**Decision.** Three defects found by re-shooting the committed screenshots were
+fixed, and the screenshots were replaced. The fixes are in
+`QuestionBarChart.tsx` and the teacher dashboard.
+
+**Why this is recorded:** none of the three was visible in code review, and two
+of them were *not* visible in the previous screenshots either — they only
+appeared once the widgets rendered with the data that exercises them. They are
+worth writing down because each is a case of the chart confidently drawing
+something wrong, which is the failure mode the rest of this file keeps returning
+to.
+
+1. **The value axis read `3students`.** Recharts' own `unit` prop on an axis is
+   concatenated with no separator. A `tickFormatter` now appends the unit with a
+   space. The tooltip and the direct label were already doing this; the axis was
+   the one path where the unit was passed through as a prop rather than as text.
+
+2. **A vertical bar's direct label read `1` above `pupils`, stacked.** Found by
+   dumping the rendered `outerHTML` rather than by looking at the chart: a
+   Recharts `LabelList` with `position="top"` splits its text on whitespace into
+   two `<tspan>` lines, dropping the space and wrapping the unit underneath. The
+   horizontal (`position="right"`) branch renders a single tspan and was never
+   affected. Fixed with a non-breaking space, **scoped to the vertical branch
+   only** — applying it to both would have leaked an invisible character into
+   every horizontal label's copy-paste for no benefit.
+
+   The related half: a direct label sits *outside* its bar, so the chart has to
+   reserve room for it or the longest label is clipped at the edge (`3 stude`).
+   The right margin is now computed from the longest label actually present
+   rather than a fixed constant, so a longer unit cannot quietly reintroduce the
+   clipping.
+
+3. **The grade-distribution panel could draw an empty plot.** All six grade
+   bands come back even when every one of them is zero, so the chart's own
+   `data.length === 0` empty state can never fire. A subject with no marks
+   therefore rendered an empty set of axes, which reads as a *broken chart*
+   rather than as *a subject nobody has marked*. The card now gates on the total
+   count and says which of the two situations it is.
+
+   Paired with it: the subject selector defaulted to the alphabetically-first
+   subject, which may be unmarked, so a teacher's first look at their own
+   dashboard could open on the empty panel. The default is now the
+   alphabetically-first subject **that has marks**, with an explicit `?subject=`
+   selection still winning.
+
+**Alternative rejected:** leave them, on the grounds that the numbers were
+correct and only the presentation was off. Rejected because a stacked `1` /
+`pupils` and an empty plot are not read as presentation by anyone looking at the
+screen — they are read as *one pupil* and *no data*, and the second is a claim
+about the school that the dashboard is not entitled to make.
+
+**How it was verified.** Not by re-reading the components. The `LabelList`
+markup was dumped from the live DOM and every `svg text.recharts-label` was
+asserted to carry exactly one `tspan`; the axis ticks were asserted to match
+`\b\d+ students\b` after normalising non-breaking spaces, and separately
+asserted not to contain a glued unit; and the grade panel was asserted to render
+bars with all six band labels present. The database was queried in the same pass
+to confirm the heat map's `Partial` state genuinely does not occur in the seed
+(§ 6) — the check was mine, not the data's.

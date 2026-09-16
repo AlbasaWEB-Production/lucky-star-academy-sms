@@ -54,8 +54,31 @@ export default function QuestionBarChart({
 
   const isPercent = unit === "%";
   const domain: [number | string, number | string] = isPercent ? [0, 100] : [0, "dataMax"];
+  // Number-axis ticks carry the unit as well. Recharts' own `unit` axis prop is
+  // concatenated with no separator, so the axis used to read `3students`;
+  // formatting the tick keeps the space.
+  const tickFormatter = (value: unknown) =>
+    typeof value === "number" ? `${value}${unitSuffix}` : String(value);
+
+  // The direct label on a bar, in the ordinary case.
   const labelFormatter = (value: unknown) =>
     typeof value === "number" ? `${value}${unitSuffix}` : String(value);
+
+  // `LabelList` with `position="top"` splits its text on whitespace into two
+  // stacked `<tspan>` lines, which drops the space and wraps the unit under the
+  // value — `1` above `pupils` rather than `1 pupils`. A non-breaking space
+  // still renders as a visible space but is not a word boundary, so the label
+  // stays on one line. Confined to the vertical branch, which is the one that
+  // wraps: the horizontal label is a single tspan and keeps an ordinary space.
+  const topLabelFormatter = (value: unknown) =>
+    typeof value === "number" ? `${value}${unit ? ` ${unit}` : ""}` : String(value);
+
+  // A direct label sits *outside* its bar, so the chart has to reserve room for
+  // it or the longest one is cut off at the edge (`3 stude`). Sized from the
+  // longest label actually present rather than a fixed margin, so a longer unit
+  // cannot quietly reintroduce the clipping.
+  const valueLabelWidth =
+    12 + Math.ceil(data.reduce((longest, d) => Math.max(longest, `${d.value}${unitSuffix}`.length), 0) * 7);
 
   return (
     <Box sx={{ width: "100%", height }} role="img" aria-label={question}>
@@ -64,7 +87,7 @@ export default function QuestionBarChart({
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 8, right: 32, bottom: 8, left: 0 }}
+            margin={{ top: 8, right: valueLabelWidth, bottom: 8, left: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis
@@ -72,7 +95,7 @@ export default function QuestionBarChart({
               domain={domain}
               tick={{ fontSize: 12 }}
               allowDecimals={false}
-              unit={unit}
+              tickFormatter={tickFormatter}
             />
             <YAxis
               type="category"
@@ -91,7 +114,7 @@ export default function QuestionBarChart({
             </Bar>
           </BarChart>
         ) : (
-          <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+          <BarChart data={data} margin={{ top: 20, right: 16, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="name"
@@ -105,14 +128,14 @@ export default function QuestionBarChart({
               tick={{ fontSize: 12 }}
               allowDecimals={false}
               domain={domain}
-              unit={unit}
+              tickFormatter={tickFormatter}
             />
             <Tooltip formatter={(value) => [`${value}${unitSuffix}`, question]} />
             <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={64}>
               <LabelList
                 dataKey="value"
                 position="top"
-                formatter={labelFormatter}
+                formatter={topLabelFormatter}
                 style={{ fontSize: 12, fill: "#1A1A1A" }}
               />
             </Bar>

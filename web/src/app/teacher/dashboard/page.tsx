@@ -98,8 +98,16 @@ export default async function TeacherDashboardPage({
   const teacherSubjects = assignments.map((a) => ({ id: a.subjectId, name: a.subjectName })).sort(
     (a, b) => a.name.localeCompare(b.name),
   );
+  // Default to a subject that actually has marks. The alphabetically-first
+  // subject can be unmarked, which would open the headline marks widget empty
+  // on the teacher's very first look; `marksBySubject` is the set that does not.
+  // An explicit URL selection still wins.
+  const markedSubjectIds = new Set(marksBySubject.map((row) => row.subjectId));
   const selectedSubjectId =
-    teacherSubjects.find((s) => s.id === subjectParam)?.id ?? teacherSubjects[0]?.id ?? "";
+    teacherSubjects.find((s) => s.id === subjectParam)?.id ??
+    teacherSubjects.find((s) => markedSubjectIds.has(s.id))?.id ??
+    teacherSubjects[0]?.id ??
+    "";
 
   const sortedAssignments = [...assignments].sort(
     (a, b) => a.className.localeCompare(b.className) || a.subjectName.localeCompare(b.subjectName),
@@ -306,8 +314,16 @@ export default async function TeacherDashboardPage({
               </Suspense>
             ) : null
           }
-          empty={selectedSubjectId === ""}
-          emptyMessage="Assign a subject to see how pupils are performing in it."
+          // All six bands come back even when they are all zero, so `gradeData`
+          // is never empty and the chart's own empty state cannot fire. Without
+          // this the panel draws an empty plot, which looks like a chart that
+          // failed rather than a subject nobody has marked.
+          empty={selectedSubjectId === "" || gradeCount === 0}
+          emptyMessage={
+            gradeCount === 0
+              ? "No marks recorded for this subject yet. Record marks, or pick a subject that has them."
+              : "Assign a subject to see how pupils are performing in it."
+          }
         >
           <QuestionBarChart
             data={gradeData}
