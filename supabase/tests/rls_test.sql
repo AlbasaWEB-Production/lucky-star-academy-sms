@@ -417,7 +417,190 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 11. Report
+-- 11. Finance fixtures (Phase 1)
+-- ---------------------------------------------------------------------------
+-- Terms come first: every finance table foreign-keys to them. The receipt
+-- trigger reads max(receipt_number)+1, so each fee_payment is its own statement
+-- (a BEFORE trigger cannot see rows the same INSERT statement is still building,
+-- which would hand out duplicate receipt numbers).
+insert into public.terms (id, school_id, name, term_number, start_date, end_date) values
+  ('a7000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'Term 1', 1, '2026-01-01', '2026-04-30'),
+  ('b7000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'Term 1', 1, '2026-01-01', '2026-04-30');
+
+insert into public.fee_structures (id, school_id, class_id, term_id, description, amount, due_date) values
+  ('a8000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Tuition', 18000, '2026-01-15'),
+  ('b8000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'b4000000-0000-4000-8000-000000000001', 'b7000000-0000-4000-8000-000000000001', 'Tuition', 20000, '2026-01-15');
+
+insert into public.fee_assessments (id, school_id, student_id, class_id, term_id, amount, due_date) values
+  ('a8000000-0000-4000-8000-000000000101', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 18000, '2026-01-15'),
+  ('a8000000-0000-4000-8000-000000000102', 'a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000002', 'a4000000-0000-4000-8000-000000000002', 'a7000000-0000-4000-8000-000000000001', 18000, '2026-01-15'),
+  ('b8000000-0000-4000-8000-000000000101', 'b0000000-0000-4000-8000-000000000001', 'b3000000-0000-4000-8000-000000000001', 'b4000000-0000-4000-8000-000000000001', 'b7000000-0000-4000-8000-000000000001', 20000, '2026-01-15');
+
+-- Three payments in school A: a payment for each pupil plus a reversal. Each in
+-- its own statement so the receipt trigger sees the previous receipts.
+insert into public.fee_payments (id, school_id, assessment_id, amount, payment_date, method)
+values ('a8000000-0000-4000-8000-000000000201', 'a0000000-0000-4000-8000-000000000001', 'a8000000-0000-4000-8000-000000000101', 10000, '2026-01-20', 'cash');
+insert into public.fee_payments (id, school_id, assessment_id, amount, payment_date, method)
+values ('a8000000-0000-4000-8000-000000000202', 'a0000000-0000-4000-8000-000000000001', 'a8000000-0000-4000-8000-000000000102', 5000, '2026-01-20', 'mobile_money');
+insert into public.fee_payments (id, school_id, assessment_id, amount, payment_date, method, is_reversal, reverses_payment_id, reversal_reason)
+values ('a8000000-0000-4000-8000-000000000203', 'a0000000-0000-4000-8000-000000000001', 'a8000000-0000-4000-8000-000000000101', 10000, '2026-01-25', 'cash', true, 'a8000000-0000-4000-8000-000000000201', 'Duplicate entry');
+insert into public.fee_payments (id, school_id, assessment_id, amount, payment_date, method)
+values ('b8000000-0000-4000-8000-000000000201', 'b0000000-0000-4000-8000-000000000001', 'b8000000-0000-4000-8000-000000000101', 20000, '2026-01-20', 'bank');
+
+insert into public.budget_lines (id, school_id, term_id, cost_centre, description, budget_amount) values
+  ('a8000000-0000-4000-8000-000000000301', 'a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Teaching', 'Stationery', 50000),
+  ('a8000000-0000-4000-8000-000000000302', 'a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Utilities', 'Electricity', 30000),
+  ('b8000000-0000-4000-8000-000000000301', 'b0000000-0000-4000-8000-000000000001', 'b7000000-0000-4000-8000-000000000001', 'Teaching', 'Books', 60000);
+
+insert into public.expenses (id, school_id, term_id, cost_centre, description, amount, expense_date) values
+  ('a8000000-0000-4000-8000-000000000401', 'a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Teaching', 'Exercise books', 12000, '2026-02-10'),
+  ('a8000000-0000-4000-8000-000000000402', 'a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Utilities', 'Power bill', 28000, '2026-02-11'),
+  ('b8000000-0000-4000-8000-000000000401', 'b0000000-0000-4000-8000-000000000001', 'b7000000-0000-4000-8000-000000000001', 'Teaching', 'Chalk', 8000, '2026-02-12');
+
+
+-- ---------------------------------------------------------------------------
+-- 12. Finance - admin A
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A sees exactly its own term',                       (select count(*) from public.terms), 1),
+  ('admin A does not see school B''s term',                   (select count(*) from public.terms where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees its own fee structure',                      (select count(*) from public.fee_structures), 1),
+  ('admin A does not see school B''s fee structure',          (select count(*) from public.fee_structures where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees both its fee assessments',                   (select count(*) from public.fee_assessments), 2),
+  ('admin A does not see school B''s assessment',             (select count(*) from public.fee_assessments where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees all three payments (incl. reversal)',        (select count(*) from public.fee_payments), 3),
+  ('admin A does not see school B''s payment',                (select count(*) from public.fee_payments where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees both its budget lines',                      (select count(*) from public.budget_lines), 2),
+  ('admin A sees both its expenses',                          (select count(*) from public.expenses), 2),
+  ('admin A sees fee status for both its pupils',             (select count(*) from public.v_fee_status_by_student), 2),
+  ('admin A sees one collected-vs-expected row',              (select count(*) from public.v_fees_collected_vs_expected), 1),
+  ('admin A sees outstanding by both its classes',            (select count(*) from public.v_outstanding_by_class), 2),
+  ('admin A sees budget-vs-actual for two centres',           (select count(*) from public.v_budget_vs_actual), 2),
+  ('admin A sees two cash-position months',                   (select count(*) from public.v_cash_position), 2);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 13. Finance - teacher A1 (its own class, but never a payment row)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A1 sees fees only for its own class''s pupil',    (select count(*) from public.fee_assessments), 1),
+  ('teacher A1 cannot see another class''s assessment',       (select count(*) from public.fee_assessments where class_id = 'a4000000-0000-4000-8000-000000000002'), 0),
+  ('teacher A1 sees no fee payment rows (none of them)',      (select count(*) from public.fee_payments), 0),
+  ('teacher A1 sees no fee structures',                       (select count(*) from public.fee_structures), 0),
+  ('teacher A1 sees no budget lines',                         (select count(*) from public.budget_lines), 0),
+  ('teacher A1 sees no expenses',                             (select count(*) from public.expenses), 0),
+  ('teacher A1 sees fee status for its class''s pupil',       (select count(*) from public.v_fee_status_by_student), 1),
+  ('teacher A1 sees none of the admin cash figures',          (select count(*) from public.v_fees_collected_vs_expected), 0);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 14. Finance - student A1 (only its own assessment and payments)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('student A1 sees only its own assessment',                 (select count(*) from public.fee_assessments), 1),
+  ('student A1 cannot see the other pupil''s fees',           (select count(*) from public.fee_assessments where student_id = 'a3000000-0000-4000-8000-000000000002'), 0),
+  ('student A1 sees its own payment and reversal',            (select count(*) from public.fee_payments), 2),
+  ('student A1 cannot see the other pupil''s payment',        (select count(*) from public.fee_payments where assessment_id = 'a8000000-0000-4000-8000-000000000102'), 0),
+  ('student A1 sees no fee structure',                        (select count(*) from public.fee_structures), 0),
+  ('student A1 sees no budget line',                          (select count(*) from public.budget_lines), 0),
+  ('student A1 sees no expense',                              (select count(*) from public.expenses), 0),
+  ('student A1 sees no class-wide fee status',                (select count(*) from public.v_fee_status_by_student), 0),
+  ('student A1 sees no collected-vs-expected figure',         (select count(*) from public.v_fees_collected_vs_expected), 0),
+  ('student A1 sees no outstanding-by-class figure',          (select count(*) from public.v_outstanding_by_class), 0),
+  ('student A1 sees no cash position figure',                 (select count(*) from public.v_cash_position), 0);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 15. Finance - privilege escalation
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+do $$
+begin
+  begin
+    insert into public.fee_payments (school_id, assessment_id, amount, payment_date, method)
+    values ('a0000000-0000-4000-8000-000000000001',
+            'a8000000-0000-4000-8000-000000000102',
+            5000, current_date, 'cash');
+    insert into rls_results values ('student CANNOT record a payment', 1, 0);
+  exception when others then
+    insert into rls_results values ('student CANNOT record a payment', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.fee_assessments (school_id, student_id, class_id, term_id, amount)
+    values ('a0000000-0000-4000-8000-000000000001',
+            'a3000000-0000-4000-8000-000000000002',
+            'a4000000-0000-4000-8000-000000000002',
+            'a7000000-0000-4000-8000-000000000001',
+            18000);
+    insert into rls_results values ('student CANNOT bill another pupil', 1, 0);
+  exception when others then
+    insert into rls_results values ('student CANNOT bill another pupil', 0, 0);
+  end;
+end;
+$$;
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+do $$
+begin
+  begin
+    insert into public.budget_lines (school_id, term_id, cost_centre, budget_amount)
+    values ('b0000000-0000-4000-8000-000000000001',
+            'b7000000-0000-4000-8000-000000000001',
+            'Teaching', 10000);
+    insert into rls_results values ('admin A CANNOT bill school B''s budget', 1, 0);
+  exception when others then
+    insert into rls_results values ('admin A CANNOT bill school B''s budget', 0, 0);
+  end;
+end;
+$$;
+
+-- Positive control: admin A CAN record a payment in its own school. Kept as its
+-- own statement so the receipt trigger's max()+1 sees the three rows above it.
+insert into public.fee_payments (school_id, assessment_id, amount, payment_date, method)
+values ('a0000000-0000-4000-8000-000000000001',
+        'a8000000-0000-4000-8000-000000000101',
+        3000, current_date, 'cash');
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A CAN record a payment in its own school (control)',
+   (select count(*) from public.fee_payments where school_id = 'a0000000-0000-4000-8000-000000000001'), 4);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 16. Report
 -- ---------------------------------------------------------------------------
 
 select

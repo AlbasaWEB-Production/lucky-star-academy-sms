@@ -92,6 +92,16 @@ Dashboard / header helpers:
 
 Also `@/lib/data/school`: `getOwnSchool`, `schoolSlugOrThrow`.
 
+Finance reads live in `@/lib/data/finance` (not `queries`): `listTerms`,
+`listFeeStructures`, `listFeeAssessments`, `listFeePayments`,
+`listBudgetLines`, `listExpenses`, `listOwnFinance` (pupil),
+`listFeesCollectedVsExpected`, `listOutstandingByClass`, `listCashPosition`,
+`listBudgetVsActual`, `listFeeStatusByStudent`. Admin writes go through
+`@/lib/actions/finance`. **Money is integer pesewas** everywhere — the exact
+amount is stored and summed, and formatted for display only, through the single
+formatter `formatCedis` (`@/lib/money`). Never format money inline, never store
+a float, and never present it as anything but Ghana cedis.
+
 ### Header data — `@/lib/data/header` (server only)
 
 `getHeaderData(role, userId)` returns `{ today, notifications, calendar }`:
@@ -159,6 +169,11 @@ so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
 | `@/components/charts/MarksBarChart` | `{ data: {name, value}[], height?, color? }` |
 | `@/components/charts/QuestionBarChart` | `{ data: {name, value}[], question, unit?, color?, height?, horizontal? }` — a single-series bar chart that answers one question; `question` is the `aria-label` and tooltip title, `unit` is appended to the axis and labels, `horizontal` gives a per-category comparison |
 | `@/components/charts/PeopleBreakdown` | `{ students, teachers, admins, height? }` — three-bar horizontal comparison; administrators are always the third group |
+| `@/components/charts/FeesCollectedVsExpectedChart` | `{ data: { name, expected, collected }[], height? }` — collected bars against a gold target line |
+| `@/components/charts/OutstandingByClassChart` | `{ data: { name, collected, outstanding }[], height? }` — stacked collected-vs-owing per class |
+| `@/components/charts/CashPositionChart` | `{ data: { name, income, expenses, runningBalance }[], height? }` — income/expense bars with a running-balance line |
+| `@/components/charts/BudgetVsActualChart` | `{ data: { name, budget, actual }[], height? }` — budget vs actual per cost centre |
+| `@/components/dashboard/DataTable` | `{ rows, columns, csvName, initialSortKey?, initialSortDirection?, pageSize? }` — client sortable/searchable staff table with CSV export, used for defaulters; each column `{ key, label, type?, align? }` where `type` is `"money"` for right-aligned pesewas |
 | `@/components/charts/tokens` | `CHART_COLORS` — the shared ordered series palette (`#147B45`, `#083E28`, `#F2B705`, `#3D9C6A`, `#6B8F7A`). Every chart imports from here; never hard-code a series colour |
 | `@/components/ui/SearchBar` | `{ placeholder, initialQuery? }` — client filter box for list pages; writes `?q=` to the URL and leaves the actual filtering to the server page (see "Searching a list") |
 | `@/components/NextLink` | `next/link` wrapper; required for MUI `component={Link}` |

@@ -10,7 +10,7 @@ The short version:
 | --- | --- | --- |
 | Frontend | React 18 via Create React App, MUI v5, Redux Toolkit, react-router, axios | **Next.js 16.3 App Router**, React 19, MUI v9, Server Components + Server Actions |
 | Backend | Express 4 REST API (`backend/`), 16 files | **Supabase** — Postgres + PostgREST. No server framework, no API layer to maintain |
-| Database | MongoDB via Mongoose 7 (7 collections, embedded arrays) | **Postgres** with 10 normalised tables, foreign keys, indexes and constraints |
+| Database | MongoDB via Mongoose 7 (7 collections, embedded arrays) | **Postgres** with 17 normalised tables, foreign keys, indexes and constraints |
 | Auth | `bcrypt` password hashes, no tokens; `role` stored in `localStorage` | **Supabase Auth** (email + password) with role and tenant in `app_metadata`, sessions in HTTP-only cookies |
 | Authorization | **None server-side.** The API trusted a `role` field the browser sent | **Row Level Security** on every table, enforced by Postgres |
 | State management | 12 Redux slice/handler files doing client-side fetching and caching | Deleted. Server Components read, Server Actions write |
@@ -23,6 +23,10 @@ supabase/
   migrations/
     20260101000000_initial_schema.sql   tables, constraints, indexes, trigger, view
     20260101000100_rls_policies.sql     RLS enablement, policies, grants
+    20260101000200_dashboard_analytics.sql   dashboard aggregate views + thresholds
+    20260101000300_dashboard_view_role_scope.sql  role-scoped security_invoker views
+    20260101000400_analytics_fees.sql    Phase 1: fees, budget, expenses, finance views
+    20260101000450_revoke_anon_privileges.sql  least privilege: `anon` holds nothing in public
   tests/
     rls_test.sql                        row level security test suite - run this
   verify.sql                            post-install structural checks (read-only)
@@ -206,9 +210,15 @@ after such a change the user must sign in again.
 | `teacher_attendance` | read/write all | self, read only | none |
 | `notices` | read/write | read | read |
 | `complaints` | read all, delete | none | insert/read own |
+| `terms`, `fee_structures`, `budget_lines`, `expenses` | read/write all | none | none |
+| `fee_assessments` | read/write all | read only classes they teach | own only |
+| `fee_payments` | read/write, delete; "reverse" via compensating row | none | own payments, read only |
 
-Details, including the `WITH CHECK` clauses that stop privilege escalation, are
-in `20260101000100_rls_policies.sql`.
+The finance tables and views are delegated to RLS exactly like the others; the
+role-scoped `security_invoker` views appends finance aggregates and are
+admin-only (see "Analytics expansion" below). Details, including the `WITH
+CHECK` clauses that stop privilege escalation, are in
+`20260101000100_rls_policies.sql`.
 
 ### Notable hardening, and the traps avoided
 
@@ -309,6 +319,33 @@ differences:
 | `TeacherComplain.js` | Dropped — it was an empty stub with no feature behind it |
 | "Login as Guest" | Dropped — it hard-coded demo credentials. Re-add only with a real demo tenant |
 
+## Analytics expansion
+
+After the MERN→Next migration, the whole-school analytics brief
+(`web/ANALYTICS-ROADMAP.md`) extends the product across five phases and then
+reorganises the dashboards. Phase 1 (fees & finance) is live:
+
+- **Data model** — `terms`, `fee_structures` (per class/term), `fee_assessments`
+  (per pupil), `fee_payments` (with database-issued receipt numbers, sequential
+  per school, never reused; a payment is never deleted, only *reversed* by a
+  compensating row bearing a `reversal_reason`), `budget_lines` and `expenses`.
+  Money is integer **pesewas**, formatted as Ghana cedis through a single
+  formatter.
+- **Views** — `v_fee_status_by_student`, `v_fees_collected_vs_expected`,
+  `v_outstanding_by_class`, `v_budget_vs_actual`, `v_cash_position`, all
+  `security_invoker = true`; the admin aggregates are admin-only.
+- **Screens** — admin `/admin/fees` overview (collected-vs-expected with a
+  target line, outstanding by class, collection-rate and days-to-pay KPIs with
+  previous-term comparison, sortable defaulters, monthly cash position,
+  budget-vs-actual by cost centre), structures, assessments, payments,
+  budget and expenses pages; a pupil-owned `/student/finance` balance and
+  receipts view.
+- **Hardening** — see `20260101000450_revoke_anon_privileges.sql`.
+
+The later phases (academics, people/teaching operations, admissions & capacity,
+welfare) and the final dashboard reorganisation are tracked in
+`web/ANALYTICS-ROADMAP.md`.
+
 ## Environment constraints encountered
 
 Worth knowing if you continue this work:
@@ -378,43 +415,44 @@ output, or the code.
 5. **All six functions had a mutable `search_path`**, which
    `supabase db advisors` would have reported on the first live run.
 
-**About the test suite.** `supabase/tests/rls_test.sql` (50 probes: 4 structural
-checks, 41 access assertions, 5 attempts at a forbidden write, and 3 positive
-controls) was written during this review and is the tool for closing the gap
-below — it is not evidence that the gap is already closed. Two bugs in it were
-found and fixed before delivery: a data-modifying CTE whose count could not see
-its own insert (a data-modifying CTE shares the surrounding statement's
-snapshot, so the probe would have reported a false failure), and a teacher write
-probe placed ahead of the student read probes, which changed the counts those
-probes assert. Both are noted in the file. **It has never been executed.**
+**About the test suite.** `supabase/tests/rls_test.sql` was written during this
+review and, once a live project was available, extended into the suite that
+runs today. It threads one transaction ending in `ROLLBACK`: seeds two schools,
+impersonates an admin, two teachers and two students, and asserts the number of
+rows each role can actually reach — including the Phase 1 finance tables and
+role-scoped views and the receipt/reversal model. Two bugs were found in it
+before delivery: a data-modifying CTE whose count could not see its own insert
+(a data-modifying CTE shares the surrounding statement's snapshot, so the probe
+would have reported a false failure), and a teacher write probe placed ahead of
+the student read probes, which changed the counts those probes assert. Both are
+noted in the file.
 
-**Not verified — the remaining risk**
+### Live verification — done
 
-- The migrations have not run on Postgres. Syntax and structure were checked,
-  not execution: constraint interactions, the trigger behaviour, and policy
-  evaluation are all unproven until they run.
-- **No RLS policy has been exercised.** Nothing has confirmed that a teacher
-  sees only their own classes, or that a student cannot read another student's
-  row. `supabase/verify.sql` checks that the policies *exist and are shaped
-  correctly* (including that every UPDATE policy has a `WITH CHECK`), and
-  `supabase/tests/rls_test.sql` asserts the behaviour — but neither has been run.
-- No sign-in, sign-up or CRUD flow has been run end to end against Supabase.
-- No page has been visually reviewed in a browser.
+All applied against the live project (MCP, `ascknorgqmecuuqnzrdr`):
 
-Suggested first session against a live project, in this order:
+| Check | Result |
+| --- | --- |
+| `supabase/tests/rls_test.sql` | **88 probes, 88 pass** (was 50 before Phase 1). Backed by `ROLLBACK`, so nothing was left behind. |
+| `supabase/verify.sql` | read-only; no orphan/regression rows |
+| `npm run typecheck` | exit 0 |
+| `supabase db advisors` | clean |
 
-1. Apply the two migrations.
-2. Run `supabase/verify.sql`. Every query should return no rows except the
-   inventories (2, 4, 8, 9), which list what was installed.
-3. Run `supabase/tests/rls_test.sql` and check for `FAIL` rows. This is the step
-   that converts the security model from asserted to proven. It is a single
-   transaction ending in `ROLLBACK`, so it is safe to run against a live
-   database even with real data in it.
-4. Run `supabase db advisors` and confirm nothing unexpected remains.
-5. `cd web && npm run db:types` to replace the hand-written types.
-6. Register a school, add one class, one subject, one teacher and two students,
-   then sign in as each role and confirm the teacher sees only their class and a
-   student sees only themselves.
+Running the suite surfaced one real hardening gap, fixed in
+`20260101000450_revoke_anon_privileges.sql`: the analytics tables, views and
+functions had been `grant all`ed to `authenticated` **and** `anon`. `anon` is
+the unauthenticated role — RLS happened to still block it, but a single missing
+policy would have handed the whole fee ledger to anyone. The migration revokes
+everything from `anon` and locks default privileges so it cannot recur.
+
+**Remaining risk**
+
+- Migrations and policies are proven; **no page has been visually reviewed in a
+  browser**, and no sign-in/CRUD flow has been exercised end to end against the
+  live project outside the suite.
+- `npm run db:types` still cannot be used here (it silently empties the types
+  file in this environment), so `web/src/lib/supabase/database.types.ts`
+  continues to be hand-maintained to mirror the migrations.
 
 
 ## Cutting over
