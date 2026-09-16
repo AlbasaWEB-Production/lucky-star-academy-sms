@@ -224,7 +224,9 @@ question-stating title, labelled axes, text alternative):
 **Views** (`security_invoker`): `v_enrolment_trend_by_class_campus`,
 `v_retention_dropout`, `v_pass_promotion_rates` (term-scoped via the new
 `term_id` + `pass_mark`), `v_class_average_trend`. `v_marks_by_class_subject` is
-extended to carry `term_id` so it can be filtered.
+**left as the snapshot rollup it already is** — it is not extended with `term_id`;
+per-term history lives in the four new views. This is a deliberate deviation from
+the earlier plan, recorded here and not reclassified after the fact.
 
 **Screens:**
 - `/admin/analytics/academics-enrolment` — enrolment trend by class and campus,
