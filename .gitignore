@@ -1,3 +1,4 @@
 # Supabase CLI scratch state (version-check cache, local link metadata).
 # Machine-specific, never shared - the official Supabase template ignores it too.
 supabase/.temp/
+.gstack/
