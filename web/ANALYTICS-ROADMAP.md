@@ -266,16 +266,33 @@ observation ratings — no tables, no screens, unless the head asks.
 
 ### Phase 4 — Admissions and capacity (migration `20260101000700`)
 
+> **Status: built.** Migration applied; `admissions` table + `classes.capacity`
+> live; views `v_admissions_funnel`, `v_new_enrolments_by_class_intake` and
+> `v_capacity_utilisation` live (admin-only, in-view `jwt_role()` gate); read
+> helpers and stage constants in `src/lib/admissions.ts` +
+> `src/lib/data/admissions.ts`; actions in `src/lib/actions/admissions.ts`;
+> screens `/admin/admissions` and `/admin/analytics/admissions` with the funnel,
+> new-enrolments and capacity charts; sidebar entries added; RLS suite extended
+> (Section 22, 25 probes).
+
 **Schema changes:**
 - `classes.capacity integer` (nullable; null reads as "not set", shown honestly).
 - `admissions` table — id, school_id, pupil_name, guardian_name, guardian_phone,
-  source, intake_term_id, stage (`enquiry` | `application` | `offer` | `enrolled`
-  | `declined`), stage_date, received_on, submitted_on, offered_on, enrolled_on,
-  declined_on, created_at. A row's `stage` advances (with `stage_date`); it is a
-  lead database, not a per-birth table.
+  source, intake_term_id, **class_id**, stage (`enquiry` | `application` | `offer`
+  | `enrolled` | `declined`), stage_date, received_on, submitted_on, offered_on,
+  enrolled_on, declined_on, created_at. A row's `stage` advances (with
+  `stage_date`); it is a lead database, not a per-birth table.
+- `class_id` is **not** in the original sketch above but is required so the
+  new-enrolments view can say which class an enrolled lead joined. It stays null
+  until a lead reaches `enrolled` — an enquiry is not yet in any class. Both
+  `intake_term_id` and `class_id` use composite FKs
+  (`(id, school_id)`) with `on delete restrict` (school_id is NOT NULL, so
+  `set null` is not an option).
 
-**Views** (`security_invoker`): `v_admissions_funnel` (count per current stage),
-`v_new_enrolments_by_class_intake`, `v_capacity_utilisation`.
+**Views** (`security_invoker`): `v_admissions_funnel` (count per current stage;
+every stage emitted so the funnel keeps its five-bar shape), 
+`v_new_enrolments_by_class_intake`, `v_capacity_utilisation` (capacity null →
+utilisation null, a dash — never a fabricated number).
 
 **Screens:**
 - `/admin/admissions` — record an admissions lead and advance its stage.
