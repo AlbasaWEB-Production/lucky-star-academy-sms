@@ -777,7 +777,115 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 22. Report
+-- 22. Admissions & capacity (Phase 4) - admin-only records and views
+-- ---------------------------------------------------------------------------
+-- admissions is a lead database: one row per prospect whose stage advances
+-- enquiry→application→offer→enrolled (or is declined). It is admin-only by
+-- RLS (no teacher or student policy), and all three views are admin-only via
+-- their in-view `jwt_role() = 'admin'` gate. School A builds to a full funnel:
+-- 2 enquiries, 1 application, 1 offer, 1 enrolled (into Class A1, intake
+-- Term 1), 1 declined — 6 leads. School B gets an enrolled lead into its own
+-- class plus an enquiry, so tenant isolation is provable from both sides.
+-- Class A1 has a capacity set, A2 does not (null = "not set", honest dash),
+-- B1 has one. Capacity utilisation then reads: A1 = 1 active pupil of 2 → 50%,
+-- A2 = 1 active pupil with no capacity → null, B1 = 1 active pupil of 2 → 50%.
+
+-- Class capacity is set by the owner here (RLS is bypassed); the policy is what
+-- the probes below actually exercise.
+update public.classes set capacity = 2 where id = 'a4000000-0000-4000-8000-000000000001';
+update public.classes set capacity = 2 where id = 'b4000000-0000-4000-8000-000000000001';
+-- Class A2 keeps capacity null.
+
+-- Admissions leads, inserted by the owner. Each references a term and (for the
+-- enrolled ones) a class of its own school, satisfying the composite FKs.
+insert into public.admissions (id, school_id, pupil_name, intake_term_id, class_id, stage, stage_date) values
+  ('a9000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'Alice', 'a7000000-0000-4000-8000-000000000001', null, 'enquiry',     current_date),
+  ('a9000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'Bob',   'a7000000-0000-4000-8000-000000000001', null, 'enquiry',     current_date),
+  ('a9000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'Carol', 'a7000000-0000-4000-8000-000000000001', null, 'application', current_date),
+  ('a9000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000001', 'Dave',  'a7000000-0000-4000-8000-000000000001', null, 'offer',       current_date),
+  ('a9000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001', 'Eve',   'a7000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'enrolled', current_date),
+  ('a9000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001', 'Frank', 'a7000000-0000-4000-8000-000000000001', null, 'declined',    current_date),
+  ('b9000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'Grace', 'b7000000-0000-4000-8000-000000000001', 'b4000000-0000-4000-8000-000000000001', 'enrolled', current_date),
+  ('b9000000-0000-4000-8000-000000000002', 'b0000000-0000-4000-8000-000000000001', 'Henry', 'b7000000-0000-4000-8000-000000000001', null, 'enquiry',     current_date);
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A sees its own admissions leads',             (select count(*) from public.admissions where school_id = 'a0000000-0000-4000-8000-000000000001'), 6),
+  ('admin A sees no admissions leads for school B',     (select count(*) from public.admissions where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees all five funnel stages',               (select count(*) from public.v_admissions_funnel), 5),
+  ('admin A funnel counts only its own enrolled',       (select leads from public.v_admissions_funnel where stage = 'enrolled'), 1),
+  ('admin A sees its own enrolments by class & term',   (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'a0000000-0000-4000-8000-000000000001'), 1),
+  ('admin A sees no school B enrolments',               (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('admin A sees both classes in capacity',             (select count(*) from public.v_capacity_utilisation), 2),
+  ('admin A capacity A1 is 50%',                        (select utilisation_percent::bigint from public.v_capacity_utilisation where class_id = 'a4000000-0000-4000-8000-000000000001'), 50),
+  ('admin A capacity A2 is honest (no capacity set)',   (case when (select utilisation_percent from public.v_capacity_utilisation where class_id = 'a4000000-0000-4000-8000-000000000002') is null then 1 else 0 end), 1);
+
+-- Positive control: admin A CAN record a lead, proving the teacher denial below
+-- was the policy working and not the insert being broken.
+insert into public.admissions (id, school_id, pupil_name)
+values ('a9000000-0000-4000-8000-000000000099', 'a0000000-0000-4000-8000-000000000001', 'Ivy');
+
+insert into rls_results (probe, observed, expected) values
+  ('admin A CAN record an admissions lead (control)', (select count(*) from public.admissions where school_id = 'a0000000-0000-4000-8000-000000000001'), 7);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a2000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"teacher","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('teacher A1 sees no admissions leads',        (select count(*) from public.admissions), 0),
+  ('teacher A1 sees no admissions funnel',       (select count(*) from public.v_admissions_funnel), 0),
+  ('teacher A1 sees no enrolments by class',     (select count(*) from public.v_new_enrolments_by_class_intake), 0),
+  ('teacher A1 sees no capacity utilisation',    (select count(*) from public.v_capacity_utilisation), 0);
+
+do $$
+begin
+  begin
+    insert into public.admissions (school_id, pupil_name)
+    values ('a0000000-0000-4000-8000-000000000001', 'Rogue lead');
+    insert into rls_results values ('teacher A1 CANNOT record an admissions lead', 1, 0);
+  exception when others then
+    insert into rls_results values ('teacher A1 CANNOT record an admissions lead', 0, 0);
+  end;
+end;
+$$;
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a3000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"student","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('student A1 sees no admissions leads',        (select count(*) from public.admissions), 0),
+  ('student A1 sees no admissions funnel',       (select count(*) from public.v_admissions_funnel), 0),
+  ('student A1 sees no capacity utilisation',    (select count(*) from public.v_capacity_utilisation), 0);
+
+reset role;
+
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"b0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  ('admin B sees its own admissions leads',         (select count(*) from public.admissions where school_id = 'b0000000-0000-4000-8000-000000000001'), 2),
+  ('admin B sees no admissions leads for school A', (select count(*) from public.admissions where school_id = 'a0000000-0000-4000-8000-000000000001'), 0),
+  ('admin B funnel counts only its own enrolled',   (select leads from public.v_admissions_funnel where stage = 'enrolled'), 1),
+  ('admin B sees its own enrolments by class & term', (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'b0000000-0000-4000-8000-000000000001'), 1),
+  ('admin B sees no school A enrolments',           (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'a0000000-0000-4000-8000-000000000001'), 0),
+  ('admin B sees its own class capacity',           (select count(*) from public.v_capacity_utilisation), 1),
+  ('admin B capacity B1 is 50%',                    (select utilisation_percent::bigint from public.v_capacity_utilisation where class_id = 'b4000000-0000-4000-8000-000000000001'), 50);
+
+reset role;
+
+
+-- ---------------------------------------------------------------------------
+-- 23. Report
 -- ---------------------------------------------------------------------------
 
 select
