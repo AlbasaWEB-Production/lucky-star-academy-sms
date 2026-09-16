@@ -25,9 +25,10 @@
 -- ---------------------------------------------------------------------------
 -- public.terms
 -- ---------------------------------------------------------------------------
--- One row per term per school. `is_active` defaults true for the latest row so
--- "this term" is cheap to read, but is never a hard source of truth - the
--- fn*/views resolve "this term" from the date window instead.
+-- One row per term per school. There is deliberately no `is_active` flag: "this
+-- term" is resolved from the date window (the term containing today, else the
+-- latest term that has already started), so a stale flag can never point the
+-- dashboards at the wrong term.
 
 create table public.terms (
   id          uuid primary key default gen_random_uuid(),

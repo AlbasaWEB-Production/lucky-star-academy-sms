@@ -47,6 +47,46 @@ const SCHOOL = { name: "Lucky Star Academy", slug: "lucky-star-academy" };
 // PRIMARY-ONLY school: Primary 1-6. No JHS, no SHS.
 const CLASS_NAMES = ["Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5", "Primary 6"];
 
+// The school's two campuses, one per class (school fact). Primary 1-3 are at
+// Nayilifong, Primary 4-6 at Kpatuya.
+const CLASS_CAMPUSES = [
+  "Nayilifong",
+  "Nayilifong",
+  "Nayilifong",
+  "Kpatuya",
+  "Kpatuya",
+  "Kpatuya",
+];
+
+// The school's three-term calendar for 2026/2027 (school fact). First Term must
+// contain the sampled attendance days built in section 11, or the term-scoped
+// reads - the at-risk rule and the heat map - would look at a window with no
+// attendance in it and every figure would read as an absence of data rather
+// than a real number.
+const TERMS = [
+  { name: "First Term 2026/2027", termNumber: 1, startDate: "2026-09-01", endDate: "2026-12-18" },
+  { name: "Second Term 2026/2027", termNumber: 2, startDate: "2027-01-05", endDate: "2027-04-02" },
+  { name: "Third Term 2026/2027", termNumber: 3, startDate: "2027-04-20", endDate: "2027-07-23" },
+];
+
+// The school's own dashboard thresholds - the numbers it judges pupils by.
+//
+// These are seeded as real rows rather than left to the fallbacks compiled into
+// the app and the SQL. An empty config table means the school has configured
+// nothing and every metric is quietly running on a developer's default, which
+// is indistinguishable on screen from a decision the head actually made.
+// Seeded at the documented defaults so the two agree until someone edits them.
+const THRESHOLDS = [
+  { key: "at_risk_attendance_percent", value: "80" },
+  { key: "at_risk_subject_min_mark", value: "40" },
+  { key: "at_risk_min_subjects", value: "2" },
+  { key: "grade_A_min", value: "80" },
+  { key: "grade_B_min", value: "70" },
+  { key: "grade_C_min", value: "60" },
+  { key: "grade_D_min", value: "50" },
+  { key: "grade_E_min", value: "40" },
+];
+
 // Standard Ghanaian basic-school subjects, same set for every class.
 const SUBJECTS = [
   { name: "English Language", code: "ENG", sessions: "5" },
@@ -202,7 +242,33 @@ const school = await selectSingle(
 );
 
 // ---------------------------------------------------------------------------
-// 3. Mirror role + school_id into admin app_metadata (what RLS reads)
+// 3. Term calendar + dashboard thresholds (the school's own configuration)
+// ---------------------------------------------------------------------------
+
+await must(
+  () =>
+    admin.from("terms").insert(
+      TERMS.map((t) => ({
+        school_id: school.id,
+        name: t.name,
+        term_number: t.termNumber,
+        start_date: t.startDate,
+        end_date: t.endDate,
+      })),
+    ),
+  "Insert term calendar",
+);
+
+await must(
+  () =>
+    admin.from("dashboard_thresholds").insert(
+      THRESHOLDS.map((t) => ({ school_id: school.id, key: t.key, value: t.value })),
+    ),
+  "Insert dashboard thresholds",
+);
+
+// ---------------------------------------------------------------------------
+// 4. Mirror role + school_id into admin app_metadata (what RLS reads)
 // ---------------------------------------------------------------------------
 
 await must(
@@ -214,7 +280,7 @@ await must(
 );
 
 // ---------------------------------------------------------------------------
-// 4. Admin profile row
+// 5. Admin profile row
 // ---------------------------------------------------------------------------
 
 await must(
@@ -230,7 +296,7 @@ await must(
 );
 
 // ---------------------------------------------------------------------------
-// 5. Teacher auth users + profiles
+// 6. Teacher auth users + profiles
 // ---------------------------------------------------------------------------
 
 const teacherIds = [];
@@ -259,18 +325,27 @@ for (const t of TEACHERS) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Classes (Primary 1-6)
+// 7. Classes (Primary 1-6)
 // ---------------------------------------------------------------------------
 
+// Campus assignment is one of the school's own facts, so it is set here rather
+// than left to a one-off migration backfill: re-running this seed must not
+// silently wipe which campus a class belongs to.
 const { data: classes, error: classesError } = await admin
   .from("classes")
-  .insert(CLASS_NAMES.map((name) => ({ school_id: school.id, name })))
+  .insert(
+    CLASS_NAMES.map((name, index) => ({
+      school_id: school.id,
+      name,
+      campus: CLASS_CAMPUSES[index],
+    })),
+  )
   .select("id, name");
 if (classesError || !classes) die(`Insert classes: ${classesError?.message}`);
 const classIdByName = Object.fromEntries(classes.map((c) => [c.name, c.id]));
 
 // ---------------------------------------------------------------------------
-// 7. Subjects, each assigned to that class's teacher
+// 8. Subjects, each assigned to that class's teacher
 // ---------------------------------------------------------------------------
 
 const subjectRows = [];
@@ -301,7 +376,7 @@ for (const sub of subjects) {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Student auth users + profiles + students rows
+// 9. Student auth users + profiles + students rows
 // ---------------------------------------------------------------------------
 
 const studentIds = [];
@@ -342,7 +417,7 @@ for (const s of STUDENTS) {
 }
 
 // ---------------------------------------------------------------------------
-// 9. Notices
+// 10. Notices
 // ---------------------------------------------------------------------------
 
 await must(
@@ -351,48 +426,96 @@ await must(
 );
 
 // ---------------------------------------------------------------------------
-// 10. A little sample exam results + attendance so the dashboards show data
+// 11. Sample attendance + marks, so the dashboards have something real to read
 // ---------------------------------------------------------------------------
+// Deterministic, deliberately NOT random: every run produces the same dataset,
+// so a screenshot, an RLS check or a bug report is reproducible.
+//
+// The shape is uneven on purpose. A dataset that is all-Present and all-70%
+// renders every attendance widget at a flat 100% and leaves the at-risk list
+// permanently empty - which is exactly the state a real school is never in, and
+// which would let a broken dashboard look correct. So most pupils attend well,
+// a few do not, and a few are weak in two subjects.
 
-// One sample student per class (the first of each class), 3 subjects each.
-const sampleStudents = [0, 1, 2, 3, 4, 5].map((ci) => STUDENTS.find((s) => s.classIndex === ci && s.roll % 3 === 1) ?? STUDENTS[ci * 3]);
+// The first ten school days of First Term, skipping weekends. Every date here
+// falls inside the term window, so term-scoped reads (the at-risk rule) see
+// these rows. Built with UTC accessors so the dates cannot shift by a day on a
+// machine in a negative-offset timezone.
+const SCHOOL_DAYS = [];
+for (let d = new Date(Date.UTC(2026, 8, 8)); SCHOOL_DAYS.length < 10; d.setUTCDate(d.getUTCDate() + 1)) {
+  const weekday = d.getUTCDay();
+  if (weekday !== 0 && weekday !== 6) SCHOOL_DAYS.push(d.toISOString().slice(0, 10));
+}
+
+// Pupils below the default at-risk bars: under 40 in English and Mathematics
+// (the two subjects attendance is taken in), and under 80% attendance. They are
+// spread across three classes and both campuses, so no single class looks like
+// the problem.
+const STRUGGLING_ROLLS = new Set([5, 11, 14]);
+
+/** Mark for a pupil in a subject. Spreads across 32..96 so every band A-F appears. */
+function markFor(roll, subjectIndex) {
+  if (STRUGGLING_ROLLS.has(roll)) {
+    return 28 + subjectIndex * 6; // 28, 34, 40 - below 40 in the first two
+  }
+  return 32 + ((roll * 17 + subjectIndex * 29) % 65);
+}
+
+/**
+ * Whether a pupil missed a given school day.
+ *
+ * The struggling pupils miss four days in ten (60% attendance, under the 80%
+ * rule). Everyone else misses the odd day via a stride that does not line up
+ * with the week, so no class reads a suspiciously tidy 100% - but never more
+ * than two days, which keeps them above the rule and out of the at-risk list.
+ */
+function isAbsent(roll, dayIndex) {
+  if (STRUGGLING_ROLLS.has(roll)) {
+    return dayIndex % 5 === 2 || dayIndex % 7 === 3 || dayIndex === 8;
+  }
+  return (roll + dayIndex) % 9 === 0;
+}
+
+const EXAM_CODES = ["ENG", "MATH", "SCI"];
+// Attendance is taken in the two subjects a class meets every day.
+const REGISTER_CODES = ["ENG", "MATH"];
 
 const examRows = [];
-for (const s of sampleStudents) {
-  const userId = studentIds[STUDENTS.indexOf(s)];
-  for (const code of ["ENG", "MATH", "SCI"]) {
+const attendanceRows = [];
+
+STUDENTS.forEach((s, studentIndex) => {
+  const userId = studentIds[studentIndex];
+  const classId = classIdByName[CLASS_NAMES[s.classIndex]];
+
+  EXAM_CODES.forEach((code, subjectIndex) => {
     const subjectId = subjectIdByClassAndCode[`${s.classIndex}:${code}`];
-    if (!subjectId) continue;
+    if (!subjectId) return;
     examRows.push({
       school_id: school.id,
       student_id: userId,
       subject_id: subjectId,
-      marks_obtained: 55 + Math.floor(Math.random() * 45),
+      marks_obtained: markFor(s.roll, subjectIndex),
     });
-  }
-}
-if (examRows.length) {
-  await must(() => admin.from("exam_results").insert(examRows), "Insert sample exam results");
-}
+  });
 
-const attendanceRows = [];
-for (const s of sampleStudents) {
-  const userId = studentIds[STUDENTS.indexOf(s)];
-  const classId = classIdByName[CLASS_NAMES[s.classIndex]];
-  for (const code of ["ENG", "MATH"]) {
+  for (const code of REGISTER_CODES) {
     const subjectId = subjectIdByClassAndCode[`${s.classIndex}:${code}`];
     if (!subjectId) continue;
-    for (const date of ["2026-09-14", "2026-09-15"]) {
+    SCHOOL_DAYS.forEach((date, dayIndex) => {
       attendanceRows.push({
         school_id: school.id,
         student_id: userId,
         subject_id: subjectId,
         class_id: classId,
         date,
-        status: "Present",
+        status: isAbsent(s.roll, dayIndex) ? "Absent" : "Present",
       });
-    }
+    });
   }
+});
+
+if (examRows.length) {
+  await must(() => admin.from("exam_results").insert(examRows), "Insert sample exam results");
 }
 if (attendanceRows.length) {
   await must(() => admin.from("attendance").insert(attendanceRows), "Insert sample attendance");
@@ -405,7 +528,12 @@ if (attendanceRows.length) {
 console.log("\n✅ Seed complete.\n");
 console.log(`School:       ${SCHOOL.name} (${SCHOOL.slug})`);
 console.log(`Classes:      ${CLASS_NAMES.join(", ")}`);
+console.log(
+  `Campuses:     ${CLASS_NAMES.map((name, i) => `${name}→${CLASS_CAMPUSES[i]}`).join(", ")}`,
+);
 console.log(`Subjects:     ${SUBJECTS.length} per class`);
+console.log(`Terms:        ${TERMS.map((t) => t.name).join(", ")}`);
+console.log(`Thresholds:   ${THRESHOLDS.length} dashboard config rows`);
 console.log(`Teachers:     ${TEACHERS.length}`);
 console.log(`Students:     ${STUDENTS.length}`);
 console.log("");
