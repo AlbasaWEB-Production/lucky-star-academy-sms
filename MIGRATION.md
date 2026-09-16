@@ -30,7 +30,7 @@ supabase/
   tests/
     rls_test.sql                        row level security test suite - run this
   verify.sql                            post-install structural checks (read-only)
-web/                                    the new Next.js application
+.                                       the Next.js application (now at the repo root)
   src/app/                              routes (App Router)
   src/components/                       UI, split server / "use client"
   src/lib/supabase/                     client factories + hand-written DB types
@@ -43,7 +43,7 @@ backend/                                LEGACY Express API - retained for refere
 ```
 
 `frontend/` and `backend/` are **left untouched** so the old and new systems can
-be compared and rolled back. Nothing in `web/` imports from either. See
+be compared and rolled back. Nothing in `the app` imports from either. See
 [Cutting over](#cutting-over) for how to remove them.
 
 ## Quickstart
@@ -79,7 +79,6 @@ supabase db push
 ### 3. Configure the app
 
 ```bash
-cd web
 cp .env.example .env.local
 ```
 
@@ -99,13 +98,12 @@ Northern Region, Ghana, Primary 1–6). Instead of registering the school by
 hand, seed the tenant, its classes, subjects, admin, teachers and students:
 
 ```bash
-cd web
 node --env-file=.env.local scripts/seed.mjs
 ```
 
 The seed data is generic / placeholder (per the school owner). It prints the
 sign-in credentials on completion, e.g. admin
-`admin@luckystaracademy.edu.gh` / `Admin@2026`. See `web/scripts/seed.mjs`.
+`admin@luckystaracademy.edu.gh` / `Admin@2026`. See `scripts/seed.mjs`.
 
 Open <http://localhost:3000>. The landing page is branded for the school and
 the "Register your school" flow is no longer surfaced, since the school is
@@ -322,7 +320,7 @@ differences:
 ## Analytics expansion
 
 After the MERN→Next migration, the whole-school analytics brief
-(`web/ANALYTICS-ROADMAP.md`) extends the product across five phases and then
+(`ANALYTICS-ROADMAP.md`) extends the product across five phases and then
 reorganises the dashboards. Phase 1 (fees & finance) is live:
 
 - **Data model** — `terms`, `fee_structures` (per class/term), `fee_assessments`
@@ -344,7 +342,7 @@ reorganises the dashboards. Phase 1 (fees & finance) is live:
 
 The later phases (academics, people/teaching operations, admissions & capacity,
 welfare) and the final dashboard reorganisation are tracked in
-`web/ANALYTICS-ROADMAP.md`.
+`ANALYTICS-ROADMAP.md`.
 
 ## Environment constraints encountered
 
@@ -355,7 +353,7 @@ Worth knowing if you continue this work:
 - The **Supabase CLI crashed** under the sandboxed shell (it could not write to
   `~/.supabase/telemetry.json`). With normal permissions it should run fine.
 - Because no project was linked, **`supabase gen types` could not be run**, so
-  `web/src/lib/supabase/database.types.ts` is hand-written to mirror the
+  `src/lib/supabase/database.types.ts` is hand-written to mirror the
   migrations. Once linked, run `npm run db:types` and diff — the regenerated
   file will add `Relationships` metadata, which only enables PostgREST embedded
   selects. The data layer deliberately avoids embedding, so nothing breaks
@@ -378,8 +376,8 @@ database. Being explicit about the gap:
 | Every table has RLS enabled | compared `create table` against `alter table ... enable row level security` | 10 tables, 1:1 match |
 | Every foreign key column is indexed | reviewed `create index` output against the constraint list | full coverage, no gaps |
 | Every function pins `search_path` | reviewed `create or replace function` output | all 6 pinned |
-| TypeScript | `cd web && npm run typecheck` | exit 0 |
-| Production build | `cd web && npm run build` | exit 0, 46 routes compiled (45 page files plus the generated not-found route) |
+| TypeScript | `npm run typecheck` | exit 0 |
+| Production build | `npm run build` | exit 0, 46 routes compiled (45 page files plus the generated not-found route) |
 | Server boots and routes resolve | `next start -p 3100`, HTTP requests per route | see below |
 | Public pages server-render | fetched `/` and `/login/student` | landing page and student form render; setup banner present; Emotion styles present in `<head>`, confirming the MUI SSR cache is wired |
 
@@ -451,13 +449,13 @@ everything from `anon` and locks default privileges so it cannot recur.
   browser**, and no sign-in/CRUD flow has been exercised end to end against the
   live project outside the suite.
 - `npm run db:types` still cannot be used here (it silently empties the types
-  file in this environment), so `web/src/lib/supabase/database.types.ts`
+  file in this environment), so `src/lib/supabase/database.types.ts`
   continues to be hand-maintained to mirror the migrations.
 
 
 ## Cutting over
 
-When you are satisfied with `web/`:
+When you are satisfied with `the app`:
 
 ```bash
 git rm -r backend frontend
@@ -465,16 +463,15 @@ git rm -r backend frontend
 
 Then update the root `README.md` to drop the legacy install instructions. Until
 you do, both stacks coexist and neither interferes with the other — they share
-no dependencies and `web/` is a self-contained npm project.
+no dependencies and `the app` is a self-contained npm project.
 
 ## Verifying the app
 
 ```bash
-cd web
 npm run typecheck     # tsc, must exit 0
 npm run build         # production build
 npm run dev           # http://localhost:3000
 ```
 
-`web/PAGE-CONVENTIONS.md` documents the rules pages follow and is the first
+`PAGE-CONVENTIONS.md` documents the rules pages follow and is the first
 thing to read before adding a route.

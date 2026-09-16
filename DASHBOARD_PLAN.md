@@ -36,7 +36,7 @@ than invent one.
 
 ### Doctrine the app already enforces (and the dashboards must not break)
 
-From `web/PAGE-CONVENTIONS.md`, `MIGRATION.md` and the RLS migration:
+From `PAGE-CONVENTIONS.md`, `MIGRATION.md` and the RLS migration:
 
 - **Server Components fetch, Client Components interact.** Charts are the only
   client components — which matches the brief exactly.
@@ -91,7 +91,7 @@ mark, no thresholds config.
 
 ### Live data today (project `ascknorgqmecuuqnzrdr`)
 
-Seeded by `web/scripts/seed.mjs`: 1 school, 18 pupils (3 per class), 6 classes
+Seeded by `scripts/seed.mjs`: 1 school, 18 pupils (3 per class), 6 classes
 (Primary 1–6), 54 subjects, 25 profiles, 3 notices — and, critically,
 **24 attendance rows spanning two days (2026-09-14/15), all `Present`**,
 18 exam results, **0 complaints, 0 teacher attendance**.

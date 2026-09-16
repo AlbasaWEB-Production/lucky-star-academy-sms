@@ -4,7 +4,7 @@ One section per figure that appears on a dashboard: what it means, exactly how
 it is computed, and what it deliberately does **not** claim. The SQL lives in
 `supabase/migrations/20260101000200_dashboard_analytics.sql` (and
 `…00300_dashboard_view_role_scope.sql` for the role scoping); the TypeScript
-that reads it lives in `web/src/lib/data/dashboard.ts`.
+that reads it lives in `src/lib/data/dashboard.ts`.
 
 Two schema facts explain most of the caveats below, so they are worth holding in
 mind throughout:

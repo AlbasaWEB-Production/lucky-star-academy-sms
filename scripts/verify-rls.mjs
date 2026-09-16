@@ -16,7 +16,7 @@
 // three would score 3 each whether they were correctly separated or both
 // reading the same class.
 //
-// Run from `web/`:
+// Run from the project root:
 //   node --env-file=.env.local scripts/verify-rls.mjs
 //
 // Exits non-zero if any role sees rows it must not, so it can gate a deploy.

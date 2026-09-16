@@ -17,7 +17,7 @@ function readEnv(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(
       `Missing environment variable ${name}.\n` +
-        `Copy web/.env.example to web/.env.local, then fill in the values from ` +
+        `Copy .env.example to .env.local, then fill in the values from ` +
         `your Supabase project's Connect panel (Project Settings -> API).`,
     );
   }

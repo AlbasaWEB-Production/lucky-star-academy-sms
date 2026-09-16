@@ -34,7 +34,7 @@ export default function SetupBanner({ configured }: { configured: boolean }) {
           <code>supabase db push</code>).
         </li>
         <li>
-          Copy <code>web/.env.example</code> to <code>web/.env.local</code> and paste your project
+          Copy <code>.env.example</code> to <code>.env.local</code> and paste your project
           URL, anon key and secret key.
         </li>
         <li>Restart the dev server.</li>

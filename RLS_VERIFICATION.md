@@ -11,7 +11,6 @@ question is not whether a policy exists, but what a user actually receives.
 Reproduce with:
 
 ```bash
-cd web
 node --env-file=.env.local scripts/verify-rls.mjs
 ```
 
@@ -221,7 +220,6 @@ Any change to a view, a policy, the seed, or the auth claims should be followed
 by:
 
 ```bash
-cd web
 node --env-file=.env.local scripts/seed.mjs --reset   # only if the seed changed
 node --env-file=.env.local scripts/verify-rls.mjs     # must exit 0
 ```

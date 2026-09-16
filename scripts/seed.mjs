@@ -10,7 +10,7 @@
 // owner: the structure (school, Primary 1-6 classes, primary subjects, roles,
 // credentials) is what matters, not real student records.
 //
-// Run from the `web/` directory:
+// Run from the project root:
 //   node --env-file=.env.local scripts/seed.mjs
 //
 // It aborts (leaving the DB untouched) if the school already exists, so it is
@@ -30,7 +30,7 @@ const studentEmailDomain = process.env.STUDENT_EMAIL_DOMAIN || "students.example
 
 if (!url || !secret) {
   throw new Error(
-    "Missing Supabase env vars. Run from web/ with: node --env-file=.env.local scripts/seed.mjs",
+    "Missing Supabase env vars. Run from the project root with: node --env-file=.env.local scripts/seed.mjs",
   );
 }
 

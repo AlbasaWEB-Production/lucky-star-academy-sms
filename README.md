@@ -18,12 +18,15 @@ exam marks and communication between students, teachers and administrators.
 ## Repo layout
 
 ```
+src/            the Next.js application (App Router, Server Components + Server Actions)
+public/         static assets (crest, banner, icons)
+scripts/        database seed and probe scripts
 supabase/       migrations, RLS policies, verify checks, RLS test suite
-web/            the Next.js application (self-contained npm project)
 MIGRATION.md    full migration record: database design, security model, parity notes
 ```
 
-- **To run the app:** start with **[`web/README.md`](web/README.md)**.
+- **To run the app:** from the repo root, run `npm install` then `npm run dev`
+  (serves on http://localhost:3000).
 - **For the database schema, security model, collection-to-table mapping and
   rollback notes:** see **[`MIGRATION.md`](MIGRATION.md)**.
 

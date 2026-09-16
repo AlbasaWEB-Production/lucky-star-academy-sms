@@ -1,4 +1,34 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+next-env.d.ts
+
+# local env files - never commit real Supabase keys
+.env
+.env.local
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dev.log
+
+# os
+.DS_Store
+Thumbs.db
+
 # Supabase CLI scratch state (version-check cache, local link metadata).
 # Machine-specific, never shared - the official Supabase template ignores it too.
 supabase/.temp/
+
+# gstack session state
 .gstack/

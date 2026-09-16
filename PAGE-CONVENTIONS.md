@@ -1,6 +1,6 @@
 # Page conventions
 
-The rules and building blocks every page in `web/` follows. Read this before
+The rules and building blocks every page in this app follows. Read this before
 adding a route.
 
 ## Stack
@@ -363,7 +363,6 @@ validation.
 ## Verifying
 
 ```
-cd web
 npm run typecheck
 ```
 

@@ -5,7 +5,7 @@ import { Box } from "@mui/material";
  * Real photographs of Lucky Star Academy pupils, shown on the landing hero.
  *
  * These are the school's own photographs — the same ones used on the printed
- * admission flyer. Drop the files into `web/public/photos/` using the names
+ * admission flyer. Drop the files into `public/photos/` using the names
  * below; each one is rendered into a fixed-aspect box with `object-fit: cover`,
  * so the source crops do not need to match each other in size or ratio.
  *

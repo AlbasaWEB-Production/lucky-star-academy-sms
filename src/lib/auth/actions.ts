@@ -103,7 +103,7 @@ export async function signInAsStudentAction(
   }
 
   if (!isSupabaseAdminConfigured()) {
-    return { error: "Supabase is not configured yet. See web/.env.example." };
+    return { error: "Supabase is not configured yet. See .env.example." };
   }
 
   const admin = createSupabaseAdminClient();
@@ -195,7 +195,7 @@ export async function registerSchoolAction(
     return {
       error:
         "Server-side Supabase keys are missing, so accounts cannot be created. " +
-        "Add SUPABASE_SECRET_KEY to web/.env.local.",
+        "Add SUPABASE_SECRET_KEY to .env.local.",
     };
   }
 
