@@ -46,6 +46,13 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       ],
     },
     {
+      heading: "Analytics",
+      items: [
+        { label: "Performance", href: "/admin/analytics/academics-performance" },
+        { label: "Enrolment", href: "/admin/analytics/academics-enrolment" },
+      ],
+    },
+    {
       heading: "Finance",
       items: [
         { label: "Fee overview", href: "/admin/fees" },
@@ -96,6 +103,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
       heading: "Academics",
       items: [
         { label: "My subjects", href: "/student/subjects" },
+        { label: "My progress", href: "/student/progress" },
         { label: "My attendance", href: "/student/attendance" },
         { label: "My fees", href: "/student/finance" },
       ],

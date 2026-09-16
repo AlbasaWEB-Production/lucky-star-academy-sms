@@ -34,6 +34,14 @@ import EventNoteIcon from "@mui/icons-material/EventNote";
 import GradingIcon from "@mui/icons-material/Grading";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
+import InsightsIcon from "@mui/icons-material/Insights";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import SavingsIcon from "@mui/icons-material/Savings";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 import SchoolLogo from "@/components/ui/SchoolLogo";
@@ -72,6 +80,16 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/student/notices": <CampaignIcon fontSize="inherit" />,
   "/admin/complaints": <ReportGmailerrorredIcon fontSize="inherit" />,
   "/student/complaints": <ReportGmailerrorredIcon fontSize="inherit" />,
+  "/admin/analytics/academics-performance": <InsightsIcon fontSize="inherit" />,
+  "/admin/analytics/academics-enrolment": <InsightsIcon fontSize="inherit" />,
+  "/admin/fees": <AccountBalanceWalletIcon fontSize="inherit" />,
+  "/admin/fees/structures": <RequestQuoteIcon fontSize="inherit" />,
+  "/admin/fees/assessments": <CalculateIcon fontSize="inherit" />,
+  "/admin/fees/payments": <PaymentsIcon fontSize="inherit" />,
+  "/admin/fees/budget": <SavingsIcon fontSize="inherit" />,
+  "/admin/fees/expenses": <ReceiptLongIcon fontSize="inherit" />,
+  "/student/progress": <TrendingUpIcon fontSize="inherit" />,
+  "/student/finance": <PaymentsIcon fontSize="inherit" />,
 };
 
 /**
@@ -112,6 +130,13 @@ export default function AppShell({
 
   const sections = NAV_SECTIONS[role];
 
+  // Every route the sidebar lists for this role. A nav item is "selected" both
+  // on an exact match and on a child detail page (e.g. /admin/students/123
+  // highlights Students), but a parent must not stay lit when a sibling nav page
+  // shares its prefix — otherwise /admin/fees (the overview) would highlight on
+  // every fees sub-page at the same time as the sub-page itself.
+  const navHrefs = new Set(sections.flatMap((section) => section.items.map((item) => item.href)));
+
   const [ty, tm, td] = headerData.today.split("-").map(Number);
   const todayLabel = new Date(ty, tm - 1, td).toLocaleDateString(undefined, {
     weekday: "long",
@@ -149,7 +174,10 @@ export default function AppShell({
 
             <List dense disablePadding>
               {section.items.map((item) => {
-                const selected = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const onOwnNavPage = navHrefs.has(pathname);
+                const selected =
+                  pathname === item.href ||
+                  (!onOwnNavPage && pathname.startsWith(`${item.href}/`));
 
                 return (
                   <ListItemButton

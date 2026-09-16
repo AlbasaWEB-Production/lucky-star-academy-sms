@@ -52,9 +52,14 @@ export default async function StudentDetailPage({
         title={student.fullName}
         subtitle={`Roll number ${student.rollNumber} - ${student.className}`}
         action={
-          <Button component={Link} href="/admin/students" variant="outlined">
-            Back to students
-          </Button>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button component={Link} href={`/admin/progress/${student.id}`} variant="contained">
+              View progress
+            </Button>
+            <Button component={Link} href="/admin/students" variant="outlined">
+              Back to students
+            </Button>
+          </Box>
         }
       />
 
