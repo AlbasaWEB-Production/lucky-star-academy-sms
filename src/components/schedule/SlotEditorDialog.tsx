@@ -81,7 +81,7 @@ export default function SlotEditorDialog({
               fullWidth
               margin="none"
               defaultValue={String(slot.dayOfWeek)}
-              slotProps={{ select: { native: true } }}
+              slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
             >
               {WEEKDAYS.map((day, index) => (
                 <option key={day} value={index + 1}>
@@ -98,7 +98,7 @@ export default function SlotEditorDialog({
               fullWidth
               margin="none"
               defaultValue={String(slot.period)}
-              slotProps={{ select: { native: true } }}
+              slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
             >
               {PERIODS.map((period) => (
                 <option key={period} value={period}>

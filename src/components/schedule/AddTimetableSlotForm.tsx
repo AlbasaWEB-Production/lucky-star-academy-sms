@@ -47,7 +47,7 @@ export default function AddTimetableSlotForm({
         fullWidth
         margin="none"
         defaultValue=""
-        slotProps={{ select: { native: true } }}
+        slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
         helperText="The class and the teacher are taken from the subject, so they are never chosen here."
       >
         <option value="" disabled>
@@ -69,7 +69,7 @@ export default function AddTimetableSlotForm({
           fullWidth
           margin="none"
           defaultValue=""
-          slotProps={{ select: { native: true } }}
+          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
         >
           <option value="" disabled>
             Choose a day
@@ -89,7 +89,7 @@ export default function AddTimetableSlotForm({
           fullWidth
           margin="none"
           defaultValue=""
-          slotProps={{ select: { native: true } }}
+          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
         >
           <option value="" disabled>
             Choose a period
