@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 
 import { createAdmissionAction } from "@/lib/actions/admissions";
 import { initialFormResult } from "@/lib/actions/result";
@@ -61,11 +61,11 @@ export default function AdmissionForm({ terms }: { terms: FormOption[] }) {
       />
 
       <TextField select fullWidth margin="normal" name="intakeTermId" label="Intake term" defaultValue="">
-        <option value="">No term yet</option>
+        <MenuItem value="">No term yet</MenuItem>
         {terms.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 

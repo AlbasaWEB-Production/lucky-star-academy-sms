@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 
 import { recordPaymentAction } from "@/lib/actions/finance";
 import { initialFormResult } from "@/lib/actions/result";
@@ -44,13 +44,13 @@ export default function RecordPaymentSelectForm({
         required
         defaultValue={initialAssessment}
       >
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a pupil
-        </option>
+        </MenuItem>
         {assessments.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
@@ -66,12 +66,12 @@ export default function RecordPaymentSelectForm({
       />
 
       <TextField select fullWidth margin="normal" name="method" label="Method" required defaultValue="">
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a method
-        </option>
-        <option value="cash">Cash</option>
-        <option value="mobile_money">Mobile money</option>
-        <option value="bank">Bank</option>
+        </MenuItem>
+        <MenuItem value="cash">Cash</MenuItem>
+        <MenuItem value="mobile_money">Mobile money</MenuItem>
+        <MenuItem value="bank">Bank</MenuItem>
       </TextField>
 
       <TextField

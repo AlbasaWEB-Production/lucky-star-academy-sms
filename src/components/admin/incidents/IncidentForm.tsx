@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 
 import { createIncidentAction } from "@/lib/actions/incidents";
 import { INCIDENT_TYPES, incidentTypeLabel } from "@/lib/incidents";
@@ -51,11 +51,11 @@ export default function IncidentForm({ students }: { students: IncidentStudentOp
         }}
         helperText="Choose the pupil and their class is taken automatically."
       >
-        <option value="">Choose a pupil</option>
+        <MenuItem value="">Choose a pupil</MenuItem>
         {students.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
@@ -69,11 +69,11 @@ export default function IncidentForm({ students }: { students: IncidentStudentOp
         defaultValue=""
         helperText="A closed set — choose the type that best fits."
       >
-        <option value="">Choose a type</option>
+        <MenuItem value="">Choose a type</MenuItem>
         {INCIDENT_TYPES.map((type) => (
-          <option key={type} value={type}>
+          <MenuItem key={type} value={type}>
             {incidentTypeLabel(type)}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 

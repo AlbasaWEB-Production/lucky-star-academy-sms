@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 
 import { generateAssessmentsAction } from "@/lib/actions/finance";
 import { initialFormResult } from "@/lib/actions/result";
@@ -35,24 +35,24 @@ export default function GenerateAssessmentsForm({
       ) : null}
 
       <TextField select fullWidth margin="normal" name="classId" label="Class" required defaultValue="">
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a class
-        </option>
+        </MenuItem>
         {classes.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
       <TextField select fullWidth margin="normal" name="termId" label="Term" required defaultValue="">
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a term
-        </option>
+        </MenuItem>
         {terms.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 

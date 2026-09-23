@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, MenuItem, TextField } from "@mui/material";
 
 import { createBudgetLineAction } from "@/lib/actions/finance";
 import { initialFormResult } from "@/lib/actions/result";
@@ -29,24 +29,24 @@ export default function BudgetLineForm({ terms }: { terms: FormOption[] }) {
       ) : null}
 
       <TextField select fullWidth margin="normal" name="termId" label="Term" required defaultValue="">
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a term
-        </option>
+        </MenuItem>
         {terms.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
       <TextField select fullWidth margin="normal" name="costCentre" label="Cost centre" required defaultValue="">
-        <option value="" disabled>
+        <MenuItem value="" disabled>
           Choose a cost centre
-        </option>
+        </MenuItem>
         {COST_CENTRE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
       </TextField>
 
