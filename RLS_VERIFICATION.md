@@ -285,14 +285,40 @@ smuggling an unrelated schema change into this work.
 
 ---
 
-## Still not verified
+## Verified through the browser
 
-**Neither portal has been signed into**, because no `accountant` or
-`schedule_officer` account exists yet. The RLS work *is* verified — section 24
-forges the two roles' JWT claims directly, which is why it can prove their
-boundaries without a real account. What that does not cover is the application
-layer above it: `createOfficeStaffAction`, the server actions, the timetable
-write path through the UI, and the guards in `src/lib/auth/session.ts`.
+Both portals were signed into by a person and walked, which is the only way to
+check the layer above the database. What that pass confirmed, and what it found:
+
+**Confirmed working.** Office-staff account creation for both roles (auth user,
+`app_metadata.role`, `profiles` row, and the two ids agreeing — the failure
+`createManagedUser` compensates for). Admin, accountant and schedule officer
+dashboards resolving the current term and rendering honest empty states. The
+schedule officer's coverage aggregation returning exactly the figures the
+database implies (54 subjects, 0 slots, 6 teaching classes) and resolving teacher
+names, which is what proves `profiles_select_by_schedule_officer` works. The
+timetable write path end to end — the first row `timetable_slots` ever held,
+stamped with the right `school_id` and a NULL rather than `''` room, satisfying
+`check (room is null or length(btrim(room)) > 0)`. Both unique-constraint
+refusals returning the readable sentence rather than raw Postgres text. And the
+accountant's write path: an expense recorded through the UI, landing with the
+right tenant, an integer-pesewas amount and today's date.
+
+**Four defects the pass found, none of which any test in this repo could have.**
+Thirteen dropdowns passed native `<option>` children to a non-native MUI `Select`
+(a React console warning, invisible to `tsc`, on five pre-existing finance forms
+plus incidents and admissions). The accountant dashboard claimed every pupil had
+paid on a term where nobody had been billed. Five native selects rendered their
+label on top of their own value. The timetable defaulted to a class holding no
+subjects, so the officer's main screen opened with nothing to place.
+
+**Still not verified.** The accountant's payment and assessment actions
+(`recordPaymentAction`'s accountant-only redirect, `generateAssessmentsAction`)
+have never run, because both need a fee structure and the school has not set one
+up — the entire finance module is unexercised beyond the expense above. Neither
+portal has been checked at 360px. `scripts/verify-rls.mjs` has not been run for
+this change; it signs in as the seeded cast and would need the two new roles
+added to its list.
 
 ### The secret key: resolved, and how it was misdiagnosed
 
