@@ -5,15 +5,18 @@ import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
 
 import { signInWithEmailAction } from "@/lib/auth/actions";
 import { initialAuthFormState } from "@/lib/auth/form-state";
+import type { EmailSignInRole } from "@/lib/auth/roles";
 import PasswordField from "./PasswordField";
 
 /**
- * Email + password sign-in for admins and teachers.
+ * Email + password sign-in for every role that is identified by an email
+ * address: admins, teachers, the accountant and the schedule officer. Students
+ * use `StudentLoginForm` instead, which takes a roll number and a name.
  *
  * Uses `useActionState`, so the form posts to a Server Action and works
  * without JavaScript at all - the credential check never runs in the browser.
  */
-export default function LoginForm({ role }: { role: "admin" | "teacher" }) {
+export default function LoginForm({ role }: { role: EmailSignInRole }) {
   const [state, formAction, isPending] = useActionState(
     signInWithEmailAction,
     initialAuthFormState,

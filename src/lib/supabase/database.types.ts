@@ -694,6 +694,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      timetable_slots: {
+        Row: {
+          created_at: string;
+          day_of_week: number;
+          id: string;
+          period: number;
+          room: string | null;
+          school_id: string;
+          subject_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          day_of_week: number;
+          id?: string;
+          period: number;
+          room?: string | null;
+          school_id: string;
+          subject_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          day_of_week?: number;
+          id?: string;
+          period?: number;
+          room?: string | null;
+          school_id?: string;
+          subject_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       student_directory: {
@@ -972,6 +1005,22 @@ export type Database = {
         };
         Relationships: [];
       };
+      v_timetable_weekly: {
+        Row: {
+          class_id: string;
+          class_name: string;
+          day_of_week: number;
+          period: number;
+          room: string | null;
+          school_id: string;
+          subject_code: string;
+          subject_id: string;
+          subject_name: string;
+          teacher_id: string | null;
+          teacher_name: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       fn_at_risk_pupils: {
@@ -1006,7 +1055,7 @@ export type Database = {
     };
     Enums: {
       attendance_status: "Present" | "Absent";
-      user_role: "admin" | "teacher" | "student";
+      user_role: "accountant" | "admin" | "schedule_officer" | "student" | "teacher";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1041,7 +1090,15 @@ export type Functions<T extends keyof PublicSchema["Functions"]> =
 
 export type Enums<T extends keyof PublicSchema["Enums"]> = PublicSchema["Enums"][T];
 
-/** Application-facing role name, matching the legacy Admin/Teacher/Student labels. */
+/**
+ * Application-facing role name.
+ *
+ * Five portals: `admin`, `teacher`, `student`, and the two staff roles added
+ * for the accountant and the schedule officer. Every `Record<UserRole, ...>`
+ * in the app is therefore exhaustive by construction - adding a sixth value
+ * here is a compile error until it is given a home, a sidebar and a sign-in
+ * page.
+ */
 export type UserRole = Enums<"user_role">;
 
 export type School = Tables<"schools">;
@@ -1085,5 +1142,9 @@ export type TeacherAttendanceRate = Views<"v_teacher_attendance_rate">;
 export type AdmissionsFunnel = Views<"v_admissions_funnel">;
 export type NewEnrolmentsByClassIntake = Views<"v_new_enrolments_by_class_intake">;
 export type CapacityUtilisation = Views<"v_capacity_utilisation">;
+
+// Phase 4 - staff portals: the accountant and the schedule officer.
+export type TimetableSlot = Tables<"timetable_slots">;
+export type TimetableWeeklyRow = Views<"v_timetable_weekly">;
 
 export type AtRiskPupil = Functions<"fn_at_risk_pupils">;

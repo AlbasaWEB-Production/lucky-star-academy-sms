@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import type { Database } from "@/lib/supabase/database.types";
+import { isUserRole, roleHome, rolePrefix } from "@/lib/auth/roles";
 
 /**
  * Next.js 16 request proxy (the file formerly known as middleware.ts).
@@ -17,21 +18,17 @@ import type { Database } from "@/lib/supabase/database.types";
  *  2. Coarse route guarding by role, so a student does not land on the admin
  *     shell. This is only an UX layer - Row Level Security is what actually
  *     prevents cross-tenant reads.
+ *
+ * The role -> prefix and role -> home maps are NOT duplicated here: they come
+ * from `@/lib/auth/roles`, the same module the layouts and the sign-in action
+ * read. A role that exists in one of them and not the other would be a silent
+ * redirect loop, which is exactly the kind of bug this avoids.
  */
 
-const ROLE_PREFIXES: Record<string, string> = {
-  admin: "/admin",
-  teacher: "/teacher",
-  student: "/student",
-};
-
-const HOME_FOR_ROLE: Record<string, string> = {
-  admin: "/admin/dashboard",
-  teacher: "/teacher/dashboard",
-  student: "/student/dashboard",
-};
-
 const AUTH_ROUTES = ["/login", "/register/school"];
+
+/** Every subtree that belongs to a signed-in role. */
+const GUARDED_PREFIXES = Object.values(rolePrefix);
 
 /**
  * Routes an unauthenticated visitor may still see.
@@ -44,10 +41,6 @@ const AUTH_ROUTES = ["/login", "/register/school"];
  */
 function isPublicPath(pathname: string): boolean {
   return pathname === "/" || AUTH_ROUTES.some((route) => pathname.startsWith(route));
-}
-
-function isRole(value: unknown): value is "admin" | "teacher" | "student" {
-  return value === "admin" || value === "teacher" || value === "student";
 }
 
 export async function proxy(request: NextRequest) {
@@ -116,19 +109,29 @@ export async function proxy(request: NextRequest) {
   // They are redirected home, but the landing page itself stays reachable.
   if (AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
     const home = request.nextUrl.clone();
-    home.pathname = isRole(role) ? HOME_FOR_ROLE[role] : "/";
+    home.pathname = isUserRole(role) ? roleHome[role] : "/";
     home.search = "";
     return NextResponse.redirect(home);
   }
 
   // Confine each role to its own route subtree.
-  for (const [requiredRole, prefix] of Object.entries(ROLE_PREFIXES)) {
-    if (pathname.startsWith(prefix) && role !== requiredRole) {
-      const home = request.nextUrl.clone();
-      home.pathname = isRole(role) ? HOME_FOR_ROLE[role] : "/";
-      home.search = "";
-      return NextResponse.redirect(home);
+  if (isUserRole(role)) {
+    for (const [requiredRole, prefix] of Object.entries(rolePrefix)) {
+      if (pathname.startsWith(prefix) && role !== requiredRole) {
+        const home = request.nextUrl.clone();
+        home.pathname = roleHome[role];
+        home.search = "";
+        return NextResponse.redirect(home);
+      }
     }
+  } else if (GUARDED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    // A signed-in user whose app_metadata carries no usable role cannot be
+    // routed home, so they are sent to the landing page rather than into a
+    // subtree whose data they would fail to read anyway.
+    const home = request.nextUrl.clone();
+    home.pathname = "/";
+    home.search = "";
+    return NextResponse.redirect(home);
   }
 
   return response;

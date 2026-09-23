@@ -6,8 +6,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient, setUserAppMetadata } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/env";
-import type { UserRole } from "@/lib/supabase/database.types";
-import { roleHome } from "./session";
+import { EMAIL_SIGN_IN_ROLES, roleHome, roleLabel, isUserRole } from "./roles";
 import { slugifySchoolName, studentLoginEmail, suffixedSlug } from "./student-email";
 import type { AuthFormState } from "./form-state";
 
@@ -23,10 +22,6 @@ import type { AuthFormState } from "./form-state";
  * always called last and never inside a try/catch, which would swallow it.
  */
 
-function isRole(value: unknown): value is UserRole {
-  return value === "admin" || value === "teacher" || value === "student";
-}
-
 function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -34,7 +29,8 @@ function looksLikeEmail(value: string): boolean {
 const MIN_PASSWORD_LENGTH = 8;
 
 /**
- * Sign-in for admins and teachers, who are identified by email.
+ * Sign-in for every role identified by email - admins, teachers, the
+ * accountant and the schedule officer. Only students use the roll-number form.
  */
 export async function signInWithEmailAction(
   _previous: AuthFormState,
@@ -46,7 +42,7 @@ export async function signInWithEmailAction(
   const password = String(formData.get("password") ?? "");
   const expectedRole = formData.get("role");
 
-  if (!isRole(expectedRole) || expectedRole === "student") {
+  if (!isUserRole(expectedRole) || !EMAIL_SIGN_IN_ROLES.includes(expectedRole)) {
     return { error: "Unsupported sign-in form." };
   }
 
@@ -70,7 +66,7 @@ export async function signInWithEmailAction(
   // granted that dashboard.
   if (actualRole !== expectedRole) {
     await supabase.auth.signOut();
-    return { error: `That account is not registered as a ${expectedRole}.` };
+    return { error: `That account is not registered as a ${roleLabel[expectedRole]}.` };
   }
 
   redirect(roleHome[expectedRole]);

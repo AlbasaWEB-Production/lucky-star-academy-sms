@@ -9,10 +9,20 @@ export const metadata = {
   title: "Sign in",
 };
 
+/**
+ * The five portals, in the same order and with the same numerals as the
+ * landing page cards (`HomePortals`), so a visitor who came from there finds
+ * the same shape and the same 01-05 numbering.
+ *
+ * Administrator, Teacher and Student keep 01-03; the accountant and the
+ * schedule officer append as 04 and 05.
+ */
 const PORTALS = [
   { href: "/login/admin", title: "Administrator", hint: "Signs in with an email address." },
   { href: "/login/teacher", title: "Teacher", hint: "Signs in with an email address." },
   { href: "/login/student", title: "Student", hint: "Signs in with a roll number and name." },
+  { href: "/login/accountant", title: "Accountant", hint: "Signs in with an email address." },
+  { href: "/login/schedule", title: "Schedule Officer", hint: "Signs in with an email address." },
 ];
 
 /** White text over the banner's deep-green band (passes AA). */

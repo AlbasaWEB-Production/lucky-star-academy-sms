@@ -7,7 +7,7 @@ import { updateOwnNameAction } from "@/lib/actions/profile";
 import { initialFormResult } from "@/lib/actions/result";
 
 /**
- * Renames the signed-in user. Shared by all three portals.
+ * Renames the signed-in user. Shared by every portal.
  *
  * Writes only to the caller's own `profiles` row; the RLS self-update policy
  * pins `role` and `school_id` to the JWT, so this cannot be used to gain

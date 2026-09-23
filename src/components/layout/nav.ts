@@ -35,6 +35,7 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
         { label: "Admissions", href: "/admin/admissions" },
         { label: "Incidents", href: "/admin/incidents" },
         { label: "Teachers", href: "/admin/teachers" },
+        { label: "Office staff", href: "/admin/staff" },
         { label: "Administrators", href: "/admin/admins" },
       ],
     },
@@ -120,6 +121,53 @@ export const NAV_SECTIONS: Record<UserRole, NavSection[]> = {
         { label: "Notices", href: "/student/notices" },
         { label: "Complaints", href: "/student/complaints" },
       ],
+    },
+  ],
+  accountant: [
+    {
+      items: [
+        { label: "Dashboard", href: "/accountant/dashboard" },
+        { label: "Profile", href: "/accountant/profile" },
+      ],
+    },
+    {
+      // The fee pages the accountant actually works in. Fee structures and
+      // budgets are absent on purpose: setting the fee policy and the budget
+      // is a management decision, so those two stay on the admin's sidebar.
+      heading: "Finance",
+      items: [
+        { label: "Fee overview", href: "/accountant/fees" },
+        { label: "Assessments", href: "/accountant/fees/assessments" },
+        { label: "Payments", href: "/accountant/fees/payments" },
+        { label: "Expenses", href: "/accountant/fees/expenses" },
+      ],
+    },
+    {
+      heading: "Communication",
+      items: [{ label: "Notices", href: "/accountant/notices" }],
+    },
+  ],
+  schedule_officer: [
+    {
+      items: [
+        { label: "Dashboard", href: "/schedule/dashboard" },
+        { label: "Profile", href: "/schedule/profile" },
+      ],
+    },
+    {
+      // The timetable is the reason this role exists. Subjects and classes are
+      // listed beside it because a slot is placed by choosing a subject that
+      // already belongs to a class.
+      heading: "Timetable",
+      items: [
+        { label: "Weekly timetable", href: "/schedule/timetable" },
+        { label: "Subjects", href: "/schedule/subjects" },
+        { label: "Classes", href: "/schedule/classes" },
+      ],
+    },
+    {
+      heading: "Communication",
+      items: [{ label: "Notices", href: "/schedule/notices" }],
     },
   ],
 };

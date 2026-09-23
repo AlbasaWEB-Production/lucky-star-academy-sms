@@ -141,6 +141,25 @@ const STUDENTS = [
 ];
 const STUDENT_PASSWORD = "Student@2026";
 
+// The two office-staff roles. They exist so the accountant and schedule
+// officer portals can be signed into and reviewed locally - without a seeded
+// account the only way in is to mint one through /admin/staff first, which
+// makes the portals awkward to check on a fresh database.
+const OFFICE_STAFF = [
+  {
+    name: "Adwoa Frimpong",
+    email: "accounts@luckystaracademy.edu.gh",
+    password: "Accounts@2026",
+    role: "accountant",
+  },
+  {
+    name: "Kwesi Amankwah",
+    email: "timetable@luckystaracademy.edu.gh",
+    password: "Timetable@2026",
+    role: "schedule_officer",
+  },
+];
+
 const NOTICES = [
   { title: "Welcome to the new term", details: "Classes resume on Monday. All pupils should report with their books and school uniform." },
   { title: "Parents' meeting", details: "A general parents' meeting holds this Friday at 9:00am in the school hall. Attendance is strongly encouraged." },
@@ -175,11 +194,12 @@ async function selectSingle(qb, label) {
 
 const RESET = process.argv.includes("--reset");
 
-// Every auth-user email this seed creates (admin, teachers, students).
+// Every auth-user email this seed creates (admin, teachers, students, office staff).
 const seededEmails = new Set([
   ADMIN.email,
   ...TEACHERS.map((t) => t.email),
   ...STUDENTS.map((s) => studentEmail(s.roll)),
+  ...OFFICE_STAFF.map((s) => s.email),
 ]);
 
 async function removeSeededData() {
@@ -417,7 +437,38 @@ for (const s of STUDENTS) {
 }
 
 // ---------------------------------------------------------------------------
-// 10. Notices
+// 10. Office staff - the accountant and the schedule officer
+// ---------------------------------------------------------------------------
+// Same two-part write as every other account (auth user carrying the role in
+// app_metadata, then the profiles row). No follow-up row: neither role owns
+// anything beyond its profile, so unlike a student there is nothing else to
+// attach it to.
+
+for (const s of OFFICE_STAFF) {
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email: s.email,
+    password: s.password,
+    email_confirm: true,
+    app_metadata: { role: s.role, school_id: school.id, full_name: s.name },
+  });
+
+  if (error || !created?.user) die(`Create ${s.role} ${s.email}: ${error?.message ?? "unknown error"}`);
+
+  await must(
+    () =>
+      admin.from("profiles").insert({
+        id: created.user.id,
+        school_id: school.id,
+        role: s.role,
+        full_name: s.name,
+        email: s.email,
+      }),
+    `Insert ${s.role} profile ${s.email}`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 11. Notices
 // ---------------------------------------------------------------------------
 
 await must(
@@ -426,7 +477,7 @@ await must(
 );
 
 // ---------------------------------------------------------------------------
-// 11. Sample attendance + marks, so the dashboards have something real to read
+// 12. Sample attendance + marks, so the dashboards have something real to read
 // ---------------------------------------------------------------------------
 // Deterministic, deliberately NOT random: every run produces the same dataset,
 // so a screenshot, an RLS check or a bug report is reproducible.
@@ -536,10 +587,14 @@ console.log(`Terms:        ${TERMS.map((t) => t.name).join(", ")}`);
 console.log(`Thresholds:   ${THRESHOLDS.length} dashboard config rows`);
 console.log(`Teachers:     ${TEACHERS.length}`);
 console.log(`Students:     ${STUDENTS.length}`);
+console.log(`Office staff: ${OFFICE_STAFF.length}`);
 console.log("");
 console.log("Sign-in credentials (generic / placeholder):");
 console.log(`  Admin    ${ADMIN.email} / ${ADMIN.password}`);
 for (const t of TEACHERS) console.log(`  Teacher  ${t.email} / ${TEACHER_PASSWORD}`);
+for (const s of OFFICE_STAFF) {
+  console.log(`  ${s.role === "accountant" ? "Accountant" : "Schedule"}  ${s.email} / ${s.password}`);
+}
 console.log(`  Students roll + name / ${STUDENT_PASSWORD}`);
 for (const s of STUDENTS.slice(0, 3)) {
   console.log(`    roll ${s.roll}  ${s.name}`);

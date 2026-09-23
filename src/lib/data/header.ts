@@ -188,6 +188,71 @@ async function studentNotifications(
   return items;
 }
 
+async function accountantNotifications(weekAgoIso: string): Promise<HeaderNotice[]> {
+  const supabase = await createSupabaseServerClient();
+  const items: HeaderNotice[] = [];
+
+  // What an accountant needs to be told is money that has not arrived: fee
+  // assessments raised but not fully settled. The count comes from the
+  // role-scoped view, so it is the same figure the fee pages show.
+  //
+  // The column is `balance`, not `outstanding_pesewas`: the latter belongs to
+  // `v_outstanding_by_class`, which aggregates per class. A wrong column name
+  // here fails silently rather than loudly - PostgREST rejects the select, the
+  // error is not read below, and the notification simply never appears - so if
+  // this feed ever goes quiet, check the column names against the redeclared
+  // views in 20260101000950_staff_portals.sql before anything else.
+  const [{ count: noticeCount }, { data: statusRows }] = await Promise.all([
+    supabase.from("notices").select("*", { count: "exact", head: true }).gte("date", weekAgoIso),
+    supabase.from("v_fee_status_by_student").select("balance").gt("balance", 0),
+  ]);
+
+  const owing = (statusRows ?? []).length;
+  if (owing) {
+    items.push({
+      id: "outstanding",
+      label: `${plural(owing, "pupil still owes fees", "pupils still owe fees")}`,
+      href: "/accountant/fees",
+    });
+  }
+
+  if (noticeCount) {
+    items.push({
+      id: "notices",
+      label: `${plural(noticeCount, "new notice", "new notices")}`,
+      href: "/accountant/notices",
+    });
+  }
+
+  return items;
+}
+
+async function scheduleOfficerNotifications(): Promise<HeaderNotice[]> {
+  const supabase = await createSupabaseServerClient();
+  const items: HeaderNotice[] = [];
+
+  // Every subject is expected to hold at least one timetable slot. A subject
+  // with none is the schedule officer's actionable gap, and it is the same
+  // test the dashboard uses - not a fake "unread" count.
+  const [{ data: subjects }, { data: slots }] = await Promise.all([
+    supabase.from("subjects").select("id"),
+    supabase.from("timetable_slots").select("subject_id"),
+  ]);
+
+  const scheduled = new Set((slots ?? []).map((row) => row.subject_id));
+  const unscheduled = (subjects ?? []).filter((row) => !scheduled.has(row.id));
+
+  if (unscheduled.length) {
+    items.push({
+      id: "unscheduled",
+      label: `${plural(unscheduled.length, "subject has no timetable slot", "subjects have no timetable slot")}`,
+      href: "/schedule/timetable",
+    });
+  }
+
+  return items;
+}
+
 // ---------------------------------------------------------------------------
 // Calendar days for the current month
 // ---------------------------------------------------------------------------
@@ -240,6 +305,8 @@ export async function getHeaderData(role: UserRole, userId: string): Promise<Hea
     (async () => {
       if (role === "admin") return adminNotifications(today, weekAgoIso);
       if (role === "teacher") return teacherNotifications(userId, today, weekAgoIso);
+      if (role === "accountant") return accountantNotifications(weekAgoIso);
+      if (role === "schedule_officer") return scheduleOfficerNotifications();
       return studentNotifications(userId, weekAgoIso, weekAgoTimestamp);
     })(),
     calendarDays(monthStartIso, monthEndIso),

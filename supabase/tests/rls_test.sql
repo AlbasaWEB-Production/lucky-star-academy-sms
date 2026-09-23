@@ -76,18 +76,27 @@ insert into public.schools (id, name, slug) values
   ('a0000000-0000-4000-8000-000000000001', 'School A', 'school-a'),
   ('b0000000-0000-4000-8000-000000000001', 'School B', 'school-b');
 
--- School A: 1 admin, 2 teachers, 2 students.
--- School B: 1 admin, 1 teacher, 1 student.
+-- School A: 1 admin, 2 teachers, 2 students, 1 accountant, 1 schedule officer.
+-- School B: 1 admin, 1 teacher, 1 student, 1 accountant, 1 schedule officer.
 -- Teacher A1 teaches only subject A1 (class A1); teacher A2 only subject A2.
+--
+-- The office-staff rows matter to the counts in sections 12 and 13: an admin and
+-- a teacher read every profile in their school, so adding them moves those
+-- probes from 5 to 7. A pupil still sees only itself and its teachers, which is
+-- why the pupil probes stay at 3 and 2 - see section 6.
 insert into public.profiles (id, school_id, role, full_name, email) values
   ('a1000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'admin',   'Admin A',    'admin-a@test.local'),
   ('a2000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'teacher', 'Teacher A1', 'teacher-a1@test.local'),
   ('a2000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'teacher', 'Teacher A2', 'teacher-a2@test.local'),
   ('a3000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'student', 'Student A1', 'student-a1@test.local'),
   ('a3000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'student', 'Student A2', 'student-a2@test.local'),
+  ('a9000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'accountant',       'Accountant A',       'accountant-a@test.local'),
+  ('a9000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'schedule_officer', 'Schedule Officer A', 'schedule-a@test.local'),
   ('b1000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'admin',   'Admin B',    'admin-b@test.local'),
   ('b2000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'teacher', 'Teacher B1', 'teacher-b1@test.local'),
-  ('b3000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'student', 'Student B1', 'student-b1@test.local');
+  ('b3000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'student', 'Student B1', 'student-b1@test.local'),
+  ('b9000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'accountant',       'Accountant B',       'accountant-b@test.local'),
+  ('b9000000-0000-4000-8000-000000000002', 'b0000000-0000-4000-8000-000000000001', 'schedule_officer', 'Schedule Officer B', 'schedule-b@test.local');
 
 insert into public.classes (id, school_id, name) values
   ('a4000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'Class A1'),
@@ -196,7 +205,7 @@ insert into rls_results (probe, observed, expected) values
   ('admin A does not see school B''s students',              (select count(*) from public.students where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
   ('admin A sees both classes',                             (select count(*) from public.classes), 2),
   ('admin A sees both subjects',                            (select count(*) from public.subjects), 2),
-  ('admin A sees all 5 profiles in its school',             (select count(*) from public.profiles), 5),
+  ('admin A sees all 7 profiles in its school',             (select count(*) from public.profiles), 7),
   ('admin A sees only its own school''s notice',            (select count(*) from public.notices), 1),
   ('admin A does not see school B''s notice',               (select count(*) from public.notices where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
   ('admin A sees only its own school''s complaint',         (select count(*) from public.complaints), 1),
@@ -221,7 +230,7 @@ insert into rls_results (probe, observed, expected) values
   ('teacher A1 sees only its own teacher attendance',        (select count(*) from public.teacher_attendance), 1),
   ('teacher A1 sees no complaints',                          (select count(*) from public.complaints), 0),
   ('teacher A1 can still read the school''s notice',         (select count(*) from public.notices), 1),
-  ('teacher A1 sees the school''s staff profiles',           (select count(*) from public.profiles), 5);
+  ('teacher A1 sees the school''s staff profiles',           (select count(*) from public.profiles), 7);
 
 reset role;
 
@@ -999,7 +1008,345 @@ reset role;
 
 
 -- ---------------------------------------------------------------------------
--- 24. Report
+-- 24. Office staff: accountant and schedule_officer
+-- ---------------------------------------------------------------------------
+-- Added by 20260101000900_staff_role_enum.sql and
+-- 20260101000950_staff_portals.sql.
+--
+-- What these probes are actually for is the BOUNDARY, not the grant. Each of
+-- these roles reaches one domain and has to be refused everywhere else, so every
+-- "can" below is paired with a "cannot". The three refusals that matter most:
+--
+--   * the accountant may read a fee structure but not write one (it is the
+--     school's fee policy - an officer who could rewrite it could change what a
+--     pupil owes),
+--   * neither role may write `profiles`, so neither can promote itself,
+--   * neither may author a notice. `notices` has no per-role visibility - every
+--     notice is school-wide - so there is no way to grant "fee reminders only",
+--     and the app has no screen that posts from these portals. The policy
+--     ceiling is therefore kept level with what the UI can do.
+--
+-- This section runs last, after every other probe, because it inserts rows
+-- (an expense, a timetable slot) and would otherwise shift the counts the
+-- sections above rely on.
+
+-- Fixtures: a week for school A (two subjects across two days, one slot with no
+-- room yet) and one slot for school B, so tenant isolation is testable. Two
+-- slots share Monday period 1 on purpose - they are in different rooms, which is
+-- exactly the case the partial unique index has to allow.
+insert into public.timetable_slots (id, school_id, subject_id, day_of_week, period, room) values
+  ('ac000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000001', 1, 1, 'Room 1'),
+  ('ac000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000002', 1, 1, 'Room 2'),
+  ('ac000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000001', 2, 2, null),
+  ('bc000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001', 'b5000000-0000-4000-8000-000000000001', 1, 1, 'Room 1');
+
+
+-- --- 24a. Accountant A ----------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a9000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"accountant","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  -- Its own domain, in full.
+  ('accountant A sees its school''s assessments',           (select count(*) from public.fee_assessments), 2),
+  ('accountant A sees its school''s payments',              (select count(*) from public.fee_payments), 3),
+  ('accountant A sees its school''s expenses',              (select count(*) from public.expenses), 2),
+  ('accountant A sees its school''s budget lines',          (select count(*) from public.budget_lines), 2),
+  ('accountant A sees the fee structure it bills against',  (select count(*) from public.fee_structures), 1),
+  ('accountant A sees the roster it bills',                 (select count(*) from public.students), 2),
+  ('accountant A sees the names it bills',                  (select count(*) from public.profiles), 7),
+
+  -- Nothing from school B.
+  ('accountant A does not see school B''s assessments',     (select count(*) from public.fee_assessments where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('accountant A does not see school B''s payments',        (select count(*) from public.fee_payments where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('accountant A does not see school B''s expenses',        (select count(*) from public.expenses where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('accountant A does not see school B''s fee structure',   (select count(*) from public.fee_structures where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+
+  -- The four finance views widened for this role must answer...
+  ('accountant A sees fee status per pupil',                (select count(*) from public.v_fee_status_by_student), 2),
+  ('accountant A sees collected vs expected',               (select count(*) from public.v_fees_collected_vs_expected), 1),
+  ('accountant A sees outstanding by class',                (select count(*) from public.v_outstanding_by_class), 2),
+  -- Counted as "any row at all" rather than a fixed month count: this view
+  -- groups by month, so its cardinality follows the fixture dates rather than
+  -- anything about the policy, and an exact number here would be a probe that
+  -- breaks whenever a fixture date moves.
+  ('accountant A sees the cash position',                   (select (count(*) > 0)::int from public.v_cash_position), 1),
+  -- ...and the management one must NOT. `v_budget_vs_actual` is deliberately
+  -- left gated to 'admin' in 20260101000950: the accountant measures against the
+  -- budget, the head sets it. A zero here is the omission working, not a gap.
+  ('accountant A sees NO budget-vs-actual',                 (select count(*) from public.v_budget_vs_actual), 0),
+
+  -- The academic boundary.
+  ('accountant A sees no attendance register',              (select count(*) from public.attendance), 0),
+  ('accountant A sees no exam results',                     (select count(*) from public.exam_results), 0),
+  ('accountant A sees no teacher attendance',               (select count(*) from public.teacher_attendance), 0),
+  ('accountant A sees no complaints',                       (select count(*) from public.complaints), 0),
+  -- The timetable belongs to the other new role.
+  ('accountant A sees no timetable slots',                  (select count(*) from public.timetable_slots), 0),
+  ('accountant A sees no weekly timetable view',            (select count(*) from public.v_timetable_weekly), 0);
+
+-- Escalation and out-of-domain writes. Each records observed = 1 only if the
+-- offending statement unexpectedly SUCCEEDED.
+do $$
+begin
+  begin
+    update public.profiles set role = 'admin'
+     where id = 'a9000000-0000-4000-8000-000000000001';
+    insert into rls_results values ('accountant CANNOT promote itself to admin', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT promote itself to admin', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    -- The fee policy is the head's. Reading the structure is the accountant's
+    -- job; rewriting it is not.
+    insert into public.fee_structures (school_id, class_id, term_id, description, amount, due_date)
+    values ('a0000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001',
+            'a7000000-0000-4000-8000-000000000001', 'A fee the officer invented', 999, '2026-01-15');
+    insert into rls_results values ('accountant CANNOT set a fee structure', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT set a fee structure', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.budget_lines (school_id, term_id, cost_centre, budget_amount)
+    values ('a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 'Teaching', 1);
+    insert into rls_results values ('accountant CANNOT set a budget line', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT set a budget line', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.notices (school_id, title, details)
+    values ('a0000000-0000-4000-8000-000000000001', 'Fee reminder', 'Please settle your fees.');
+    insert into rls_results values ('accountant CANNOT publish a notice', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT publish a notice', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.timetable_slots (school_id, subject_id, day_of_week, period)
+    values ('a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000001', 3, 3);
+    insert into rls_results values ('accountant CANNOT place a timetable slot', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT place a timetable slot', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    update public.students set roll_number = 99
+     where id = 'a3000000-0000-4000-8000-000000000001';
+    insert into rls_results values ('accountant CANNOT edit the pupil roster', 1, 0);
+  exception when others then
+    insert into rls_results values ('accountant CANNOT edit the pupil roster', 0, 0);
+  end;
+end;
+$$;
+
+-- Positive control: the same role CAN record an expense, proving the refusals
+-- above are the policies working and not the writes being broken.
+insert into public.expenses (school_id, term_id, cost_centre, description, amount, expense_date)
+values ('a0000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001',
+        'Teaching', 'A legitimate expense', 500, '2026-02-20');
+
+insert into rls_results (probe, observed, expected) values
+  ('accountant CAN record an expense (control)',            (select count(*) from public.expenses), 3);
+
+reset role;
+
+
+-- --- 24b. Schedule officer A ----------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a9000000-0000-4000-8000-000000000002","role":"authenticated","app_metadata":{"role":"schedule_officer","school_id":"a0000000-0000-4000-8000-000000000001"}}';
+
+insert into rls_results (probe, observed, expected) values
+  -- Its own domain: the week, and what a week is built from.
+  ('schedule officer A sees the week it maintains',         (select count(*) from public.timetable_slots), 3),
+  ('schedule officer A sees the weekly view',               (select count(*) from public.v_timetable_weekly), 3),
+  ('schedule officer A sees the classes it schedules into', (select count(*) from public.classes), 2),
+  ('schedule officer A sees the subjects it places',        (select count(*) from public.subjects), 2),
+  -- Not a convenience: assert_subject_teacher_is_teacher() is SECURITY INVOKER
+  -- and looks the teacher up in profiles, so this read is what makes a teacher
+  -- assignment possible at all.
+  ('schedule officer A sees teacher names',                 (select count(*) from public.profiles), 7),
+  ('schedule officer A sees the pupils in the classes',     (select count(*) from public.students), 2),
+
+  -- Nothing from school B.
+  ('schedule officer A does not see school B''s week',      (select count(*) from public.timetable_slots where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('schedule officer A does not see school B''s week (view)', (select count(*) from public.v_timetable_weekly where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+  ('schedule officer A does not see school B''s classes',   (select count(*) from public.classes where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
+
+  -- No money at all.
+  ('schedule officer A sees no fee assessments',            (select count(*) from public.fee_assessments), 0),
+  ('schedule officer A sees no payments',                   (select count(*) from public.fee_payments), 0),
+  ('schedule officer A sees no fee structures',             (select count(*) from public.fee_structures), 0),
+  ('schedule officer A sees no expenses',                   (select count(*) from public.expenses), 0),
+  ('schedule officer A sees no budget lines',               (select count(*) from public.budget_lines), 0),
+  ('schedule officer A sees no finance view',               (select count(*) from public.v_fee_status_by_student), 0),
+
+  -- No academic register: the officer arranges WHEN a subject meets, never what
+  -- is written in the register or the mark sheet.
+  ('schedule officer A sees no attendance register',        (select count(*) from public.attendance), 0),
+  ('schedule officer A sees no exam results',               (select count(*) from public.exam_results), 0),
+  ('schedule officer A sees no teacher attendance',         (select count(*) from public.teacher_attendance), 0);
+
+do $$
+begin
+  begin
+    update public.profiles set role = 'admin'
+     where id = 'a9000000-0000-4000-8000-000000000002';
+    insert into rls_results values ('schedule officer CANNOT promote itself to admin', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT promote itself to admin', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    -- Creating a subject is the registrar's act, not a scheduling one. It is
+    -- refused for a second, sharper reason too: exam_results and attendance
+    -- cascade from subjects, so DELETE here would be an academic-record write.
+    insert into public.subjects (school_id, class_id, name, code, sessions)
+    values ('a0000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'Invented', 'INV', '1');
+    insert into rls_results values ('schedule officer CANNOT create a subject', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT create a subject', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    -- The destructive one: deleting a subject would cascade into the attendance
+    -- register and the mark sheet for every pupil who takes it.
+    delete from public.subjects where id = 'a5000000-0000-4000-8000-000000000002';
+    insert into rls_results values ('schedule officer CANNOT delete a subject', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT delete a subject', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.notices (school_id, title, details)
+    values ('a0000000-0000-4000-8000-000000000001', 'Timetable change', 'Period 2 moves to Room 4.');
+    insert into rls_results values ('schedule officer CANNOT publish a notice', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT publish a notice', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.fee_assessments (school_id, student_id, class_id, term_id, amount, due_date)
+    values ('a0000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001',
+            'a4000000-0000-4000-8000-000000000001', 'a7000000-0000-4000-8000-000000000001', 1, '2026-01-15');
+    insert into rls_results values ('schedule officer CANNOT raise a fee assessment', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT raise a fee assessment', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    update public.classes set name = 'Renamed by the officer'
+     where id = 'a4000000-0000-4000-8000-000000000001';
+    insert into rls_results values ('schedule officer CANNOT rename a class', 1, 0);
+  exception when others then
+    insert into rls_results values ('schedule officer CANNOT rename a class', 0, 0);
+  end;
+end;
+$$;
+
+-- Positive controls: the officer CAN place a slot and CAN keep a subject's
+-- sessions text in step with the grid, which is the whole point of the role.
+insert into public.timetable_slots (school_id, subject_id, day_of_week, period, room)
+values ('a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000002', 4, 5, 'Room 2');
+
+insert into rls_results (probe, observed, expected) values
+  ('schedule officer CAN place a timetable slot (control)', (select count(*) from public.timetable_slots), 4);
+
+update public.subjects set sessions = 'Mon P1, Tue P2, Thu P5'
+ where id = 'a5000000-0000-4000-8000-000000000002';
+
+insert into rls_results (probe, observed, expected) values
+  ('schedule officer CAN keep sessions in step (control)',  (select count(*) from public.subjects where sessions = 'Mon P1, Tue P2, Thu P5'), 1);
+
+reset role;
+
+
+-- --- 24c. Timetable constraints -------------------------------------------
+-- The grid has to refuse double-booking on its own, not only in the form. These
+-- are constraint probes rather than RLS ones, and they run as the owner so the
+-- refusal can only come from the index. They are here because they are the two
+-- rules the schedule officer's screens exist to enforce, and a regression in
+-- either is invisible on screen - the second slot would simply be saved.
+-- Run after 24b so the positive control above is not disturbed.
+
+do $$
+begin
+  begin
+    insert into public.timetable_slots (school_id, subject_id, day_of_week, period)
+    values ('a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000001', 1, 1);
+    insert into rls_results values ('a subject CANNOT be in two places at once', 1, 0);
+  exception when others then
+    insert into rls_results values ('a subject CANNOT be in two places at once', 0, 0);
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    insert into public.timetable_slots (school_id, subject_id, day_of_week, period, room)
+    values ('a0000000-0000-4000-8000-000000000001', 'a5000000-0000-4000-8000-000000000002', 1, 1, 'Room 1');
+    insert into rls_results values ('a room CANNOT host two lessons at once', 1, 0);
+  exception when others then
+    insert into rls_results values ('a room CANNOT host two lessons at once', 0, 0);
+  end;
+end;
+$$;
+
+-- The matching positive control: the SAME room and period is fine in the other
+-- school, because the room index is scoped by school_id.
+insert into public.timetable_slots (school_id, subject_id, day_of_week, period, room)
+values ('b0000000-0000-4000-8000-000000000001', 'b5000000-0000-4000-8000-000000000001', 2, 1, 'Room 1');
+
+insert into rls_results (probe, observed, expected) values
+  ('the same room name is free in another school (control)', (select count(*) from public.timetable_slots where room = 'Room 1'), 3);
+
+
+-- ---------------------------------------------------------------------------
+-- 25. Report
 -- ---------------------------------------------------------------------------
 
 select

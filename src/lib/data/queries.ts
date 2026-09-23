@@ -414,6 +414,42 @@ export async function listAdmins(): Promise<AdminSummary[]> {
   }));
 }
 
+export type OfficeStaffSummary = {
+  id: string;
+  fullName: string;
+  email: string | null;
+  role: "accountant" | "schedule_officer";
+};
+
+/**
+ * The two non-teaching, non-administrator staff roles, in one list.
+ *
+ * They are listed together rather than as two pages because they are the same
+ * kind of account - created by the school office, signed in with an email
+ * address, and holding a narrow slice of school data - and because neither is
+ * expected to number more than a handful. RLS scopes the rows to the caller's
+ * school, like every other read here.
+ */
+export async function listOfficeStaff(): Promise<OfficeStaffSummary[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role")
+    .in("role", ["accountant", "schedule_officer"])
+    .order("full_name");
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    fullName: row.full_name,
+    email: row.email,
+    // The `.in()` above is the only filter, so the column can only hold these
+    // two values; the cast records that rather than widening the type to the
+    // whole enum and forcing every caller to re-narrow it.
+    role: row.role as OfficeStaffSummary["role"],
+  }));
+}
+
 /** The signed-in teacher's own assignments. */
 export async function getOwnTeacherAssignments(teacherId: string): Promise<TeacherAssignment[]> {
   const supabase = await createSupabaseServerClient();

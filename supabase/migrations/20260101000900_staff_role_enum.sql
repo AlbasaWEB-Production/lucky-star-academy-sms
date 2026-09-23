@@ -1,0 +1,37 @@
+-- ============================================================================
+-- Lucky Star Academy SMS - Two new staff roles: accountant, schedule_officer
+-- ============================================================================
+-- Widens public.user_role from the three roles the schema started with to the
+-- five the school actually staffs:
+--
+--   admin, teacher, student   - unchanged, added by 20260101000000
+--   accountant                - records what the school charged and received
+--   schedule_officer          - owns the timetable
+--
+-- WHY THIS FILE EXISTS ON ITS OWN, WITH NOTHING ELSE IN IT
+--
+-- Postgres will not let a value added by ALTER TYPE ... ADD VALUE be *used* in
+-- the same transaction that added it:
+--
+--   ERROR:  unsafe use of new value "accountant" of enum type public.user_role
+--   HINT:   New enum values must be committed before they can be used.
+--
+-- Every migration file here is applied as a single transaction, so a policy,
+-- check, view or literal that names the new value in this same file would fail
+-- to parse or plan. The two ALTER TYPE statements are therefore isolated here,
+-- and everything that names 'accountant' or 'schedule_officer' lives in the
+-- next migration, 20260101000950_staff_portals.sql, which runs in a later
+-- transaction where both values are already committed.
+--
+-- The change is additive only: no existing value is renamed, reordered or
+-- removed, so no existing row, policy, view or function changes meaning, and no
+-- table is rewritten. Safe to run against a live project.
+--
+-- Note the values are compared as *text* everywhere downstream
+-- (`public.jwt_role()` returns text), which is also the only form available
+-- while these values are new; see the header of
+-- 20260101000950_staff_portals.sql.
+-- ============================================================================
+
+alter type public.user_role add value if not exists 'accountant';
+alter type public.user_role add value if not exists 'schedule_officer';

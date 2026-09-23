@@ -30,6 +30,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SchoolIcon from "@mui/icons-material/School";
+import BadgeIcon from "@mui/icons-material/Badge";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import GradingIcon from "@mui/icons-material/Grading";
@@ -49,6 +50,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SchoolLogo from "@/components/ui/SchoolLogo";
 import SiteFooter from "@/components/ui/SiteFooter";
 import { signOutAction } from "@/lib/auth/actions";
+import { roleLabel } from "@/lib/auth/roles";
 import { DISPLAY_FONT, DRAWER_WIDTH } from "@/theme";
 import { NAV_SECTIONS } from "./nav";
 import type { UserRole } from "@/lib/supabase/database.types";
@@ -70,6 +72,7 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/teacher/students": <GroupsIcon fontSize="inherit" />,
   "/teacher/incidents": <WarningAmberIcon fontSize="inherit" />,
   "/admin/teachers": <SchoolIcon fontSize="inherit" />,
+  "/admin/staff": <BadgeIcon fontSize="inherit" />,
   "/admin/admins": <SchoolIcon fontSize="inherit" />,
   "/admin/classes": <MenuBookIcon fontSize="inherit" />,
   "/teacher/classes": <MenuBookIcon fontSize="inherit" />,
@@ -98,6 +101,19 @@ const NAV_ICON: Record<string, ReactNode> = {
   "/admin/fees/expenses": <ReceiptLongIcon fontSize="inherit" />,
   "/student/progress": <TrendingUpIcon fontSize="inherit" />,
   "/student/finance": <PaymentsIcon fontSize="inherit" />,
+  "/accountant/dashboard": <DashboardIcon fontSize="inherit" />,
+  "/accountant/profile": <PersonIcon fontSize="inherit" />,
+  "/accountant/fees": <AccountBalanceWalletIcon fontSize="inherit" />,
+  "/accountant/fees/assessments": <CalculateIcon fontSize="inherit" />,
+  "/accountant/fees/payments": <PaymentsIcon fontSize="inherit" />,
+  "/accountant/fees/expenses": <ReceiptLongIcon fontSize="inherit" />,
+  "/accountant/notices": <CampaignIcon fontSize="inherit" />,
+  "/schedule/dashboard": <DashboardIcon fontSize="inherit" />,
+  "/schedule/profile": <PersonIcon fontSize="inherit" />,
+  "/schedule/timetable": <CalendarMonthIcon fontSize="inherit" />,
+  "/schedule/subjects": <MenuBookIcon fontSize="inherit" />,
+  "/schedule/classes": <GroupsIcon fontSize="inherit" />,
+  "/schedule/notices": <CampaignIcon fontSize="inherit" />,
 };
 
 /**
@@ -300,7 +316,7 @@ export default function AppShell({
               {schoolName}
             </Typography>
             <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-              {role.charAt(0).toUpperCase() + role.slice(1)} portal
+              {roleLabel[role]} portal
             </Typography>
           </Box>
 

@@ -28,9 +28,18 @@ order by c.relname;
 
 -- ---------------------------------------------------------------------------
 -- 2. Policy inventory.
--- EXPECT: 10 tables, and roughly this shape:
---   schools 2, profiles 4, classes 4, subjects 4, students 5,
---   exam_results 5, attendance 5, teacher_attendance 5, notices 4, complaints 4
+-- EXPECT: 20 tables and 109 policies, in this shape:
+--
+--   admissions 4, attendance 6, budget_lines 5, classes 4, complaints 4,
+--   dashboard_thresholds 4, exam_results 6, expenses 8, fee_assessments 10,
+--   fee_payments 7, fee_structures 5, incidents 6, notices 4, profiles 6,
+--   schools 2, students 8, subjects 5, teacher_attendance 5, terms 4,
+--   timetable_slots 6
+--
+-- The two office-staff roles (20260101000950_staff_portals.sql) account for the
+-- difference from the original ten tables: profiles +2, students +2, subjects
+-- +1, plus the five new tables and the timetable. Notices is 4, not 10: neither
+-- new role may publish one, so the ceiling matches what the portals can do.
 -- ---------------------------------------------------------------------------
 select tablename, count(*) as policy_count
 from pg_policies
@@ -54,7 +63,10 @@ order by table_name, privilege_type;
 -- ---------------------------------------------------------------------------
 -- 4. authenticated must hold privileges on every table, or RLS could never be
 --    reached (GRANT decides table access, RLS decides rows).
--- EXPECT: 10 tables listed, each with DELETE,INSERT,SELECT,UPDATE.
+-- EXPECT: 20 tables, each with all four of DELETE, INSERT, SELECT, UPDATE -
+--   including timetable_slots, granted by 20260101000950_staff_portals.sql.
+--   The views also appear in this listing (they are objects in
+--   role_table_grants too) and correctly show SELECT only.
 -- ---------------------------------------------------------------------------
 select table_name,
        string_agg(privilege_type, ', ' order by privilege_type) as privileges
@@ -68,7 +80,9 @@ order by table_name;
 -- ---------------------------------------------------------------------------
 -- 5. Views must be security_invoker, otherwise they bypass the RLS of their
 --    underlying tables.
--- EXPECT: student_directory with options containing security_invoker=true.
+-- EXPECT: every view with options containing security_invoker=true, and no
+--   view with "(none)". student_directory and all the v_* analytics views,
+--   including v_timetable_weekly added by 20260101000950_staff_portals.sql.
 -- ---------------------------------------------------------------------------
 select c.relname as view_name,
        coalesce(array_to_string(c.reloptions, ', '), '(none)') as options

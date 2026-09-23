@@ -1,15 +1,21 @@
+import type { ReactNode } from "react";
+
 import { Box, Container, Paper, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 import Link from "@/components/NextLink";
 import Reveal from "@/components/home/Reveal";
+import { ROLE_ORDER, roleLabel, roleSlug } from "@/lib/auth/roles";
+import type { UserRole } from "@/lib/supabase/database.types";
 import { BRAND_GOLD, BRAND_GREEN_DARK, DISPLAY_FONT, PAGE_BG } from "@/theme";
 
 /**
- * The three portals, each a door rather than a tile.
+ * The five portals, each a door rather than a tile.
  *
  * The numerals are set on a solid gold badge rather than drawn as gold text: the
  * design system keeps gold off white as a text colour (it fails contrast), so
@@ -17,30 +23,46 @@ import { BRAND_GOLD, BRAND_GREEN_DARK, DISPLAY_FONT, PAGE_BG } from "@/theme";
  *
  * The whole card is the link, so the entire surface is one target and the
  * "Continue" line is an affordance rather than a second, smaller control.
+ *
+ * Everything but the copy is DERIVED. The order, the numeral, the title and the
+ * sign-in href all come from `ROLE_ORDER` / `roleLabel` / `roleSlug` in
+ * `@/lib/auth/roles`, so adding a sixth role cannot leave this page showing
+ * five cards, or show 05 for a role the sign-in chooser numbers 06. The copy
+ * map below is a `Record<UserRole, …>`, so a new role fails to compile here
+ * until someone writes its sentence - which is the point.
+ *
+ * The href assumes the convention that a role's sign-in page is
+ * `/login/<roleSlug>`; that holds for all five and is what `/login` routes to.
  */
-const ROLE_CARDS = [
-  {
-    href: "/login/admin",
-    numeral: "01",
-    title: "Administrator",
+const CARD_COPY: Record<UserRole, { description: string; icon: ReactNode }> = {
+  admin: {
     description: "Manage students, teachers, classes, subjects, notices and complaints.",
     icon: <AdminPanelSettingsIcon />,
   },
-  {
-    href: "/login/teacher",
-    numeral: "02",
-    title: "Teacher",
+  teacher: {
     description: "Take attendance, record exam marks and review your classes.",
     icon: <MenuBookIcon />,
   },
-  {
-    href: "/login/student",
-    numeral: "03",
-    title: "Student",
+  student: {
     description: "View your subjects, attendance and marks, and submit a complaint.",
     icon: <SchoolIcon />,
   },
-];
+  accountant: {
+    description: "Issue fee assessments, bank payments and record school expenses.",
+    icon: <AccountBalanceWalletIcon />,
+  },
+  schedule_officer: {
+    description: "Build the weekly timetable so every class and teacher has its slots.",
+    icon: <CalendarMonthIcon />,
+  },
+};
+
+const ROLE_CARDS = ROLE_ORDER.map((role, index) => ({
+  href: `/login/${roleSlug[role]}`,
+  numeral: String(index + 1).padStart(2, "0"),
+  title: roleLabel[role],
+  ...CARD_COPY[role],
+}));
 
 export default function HomePortals() {
   return (
@@ -83,6 +105,9 @@ export default function HomePortals() {
           sx={{
             display: "grid",
             gap: 3,
+            // Three across from `md`; the five cards therefore flow as 3 + 2.
+            // Deliberately not five narrow columns - each card carries a
+            // description sentence and would wrap to an unreadable column.
             gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
           }}
         >

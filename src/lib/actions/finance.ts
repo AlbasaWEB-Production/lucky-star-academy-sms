@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireRoleWithTenant } from "@/lib/auth/session";
+import { requireFinanceWithTenant, requireRoleWithTenant } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cedisStringToPesewas } from "@/lib/money";
 import {
@@ -17,11 +17,33 @@ import {
 /**
  * Server actions for fees and finance.
  *
- * Every action re-checks the caller's role with `requireRoleWithTenant("admin")`
- * even though RLS would refuse the write anyway. Finance is entirely admin for
- * now (a bursar role is a roadmap proposal, not a role that exists): a teacher
- * reads fee status through the aggregated view, a pupil reads only their own
- * assessments and payments, and neither writes anything.
+ * Every action re-checks the caller's role even though RLS would refuse the
+ * write anyway. Which guard an action uses is the split between keeping the
+ * books and setting the school's money policy:
+ *
+ *  - `requireFinanceWithTenant()` - an administrator **or** the accountant.
+ *    These are the three day-to-day operations the finance desk performs:
+ *    issuing an assessment (`generateAssessmentsAction`), banking a payment
+ *    (`recordPaymentAction`) and recording what was spent
+ *    (`createExpenseAction`). The accountant portal mounts exactly these forms,
+ *    and `20260101000950_staff_portals.sql` grants the accountant the matching
+ *    insert policies.
+ *
+ *  - `requireRoleWithTenant("admin")` - everything else, because it is a
+ *    management control rather than a book-keeping one. Setting what a class is
+ *    charged (`createFeeStructureAction` / `deleteFeeStructureAction`), setting
+ *    a budget (`createBudgetLineAction`) and reversing money already banked
+ *    (`reversePaymentAction`) all change policy or rewrite the audit trail, so
+ *    they stay with the head. The accountant can *read* fee structures and
+ *    budget lines - comparing spend against the plan is the job - but the
+ *    accountant portal deliberately has no page that writes them.
+ *
+ * A teacher reads fee status through the aggregated view, a pupil reads only
+ * their own assessments and payments, and neither writes anything.
+ *
+ * Each of the three widened actions also revalidates the `/accountant/...`
+ * route it writes to, the way it already revalidated the admin one, so a
+ * finance screen the accountant is looking at is never left stale.
  *
  * Money arrives from a form as a cedi string ("180.50") and is stored as the
  * integer number of pesewas returned by `cedisStringToPesewas` - the only other
@@ -111,7 +133,8 @@ export async function generateAssessmentsAction(
   _previous: FormActionResult,
   formData: FormData,
 ): Promise<FormActionResult> {
-  const user = await requireRoleWithTenant("admin");
+  // Admin or accountant: issuing the term's bills is a book-keeping action.
+  const user = await requireFinanceWithTenant();
 
   const classId = readString(formData, "classId");
   const termId = readString(formData, "termId");
@@ -175,6 +198,7 @@ export async function generateAssessmentsAction(
   }
 
   revalidatePath("/admin/fees/assessments");
+  revalidatePath("/accountant/fees/assessments");
   return succeed;
 }
 
@@ -186,7 +210,9 @@ export async function recordPaymentAction(
   _previous: FormActionResult,
   formData: FormData,
 ): Promise<FormActionResult> {
-  const user = await requireRoleWithTenant("admin");
+  // Admin or accountant: banking money is a book-keeping action. Reversing it
+  // (below) is not, and stays admin-only.
+  const user = await requireFinanceWithTenant();
 
   const assessmentId = readString(formData, "assessmentId");
   const amountPesewas = readPesewas(formData, "amount");
@@ -238,7 +264,19 @@ export async function recordPaymentAction(
 
   revalidatePath("/admin/fees/payments");
   revalidatePath("/admin/fees/assessments");
-  // Land on the receipt for the payment just made.
+  revalidatePath("/accountant/fees/payments");
+  revalidatePath("/accountant/fees/assessments");
+
+  // An admin lands on the receipt for the payment just made. That route exists
+  // only under /admin, and src/proxy.ts confines a role to its own subtree, so
+  // an accountant sent there would be bounced to their dashboard straight after
+  // a successful save - the payment would be banked but never confirmed. They
+  // land on their own ledger instead, where the row they just recorded is the
+  // newest one. An admin's redirect is unchanged.
+  if (user.role === "accountant") {
+    redirect("/accountant/fees/payments");
+  }
+
   redirect(`/admin/fees/receipts/${data.id}`);
 }
 
@@ -335,7 +373,9 @@ export async function createExpenseAction(
   _previous: FormActionResult,
   formData: FormData,
 ): Promise<FormActionResult> {
-  const user = await requireRoleWithTenant("admin");
+  // Admin or accountant: recording what was spent is a book-keeping action.
+  // Setting the budget it is measured against (above) is not.
+  const user = await requireFinanceWithTenant();
 
   const termId = readString(formData, "termId");
   const costCentre = readString(formData, "costCentre");
@@ -380,5 +420,6 @@ export async function createExpenseAction(
   }
 
   revalidatePath("/admin/fees/expenses");
+  revalidatePath("/accountant/fees/expenses");
   return succeed;
 }
