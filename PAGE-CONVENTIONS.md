@@ -3,6 +3,31 @@
 The rules and building blocks every page in this app follows. Read this before
 adding a route.
 
+## Which conventions apply to which surface
+
+There are two surfaces in this repo, and the rules below are written for the
+**management system**. The public website follows the same design system
+(typefaces, palette, radius scale, accessibility and layout rules) but has its
+own data model and its own conventions:
+
+| | Management system | Public website |
+| --- | --- | --- |
+| Routes | `src/app/<role>/…`, `src/app/login/…` | `src/app/(site)/…` |
+| Rendered on | `portal.luckystaracademy.edu.gh` | `luckystaracademy.edu.gh` |
+| Audience | signed-in staff and pupils | anyone, including search engines |
+| Content | Supabase, scoped by RLS | `src/content/site.ts` |
+| Reads | `@/lib/data/*` server helpers | the content module; no database access |
+| Indexable | no (`noindex`, set in the root layout) | yes |
+
+**The public website does not read the database at all.** It is prerendered as
+static content, so a parent on mobile data is not waiting on a server — and it
+means a public page can never accidentally expose a row that RLS was relied on
+to filter. Anything the website needs from the school's data (news, term dates)
+is a deliberate, separate change: see `SITE.md` § 5.
+
+Read **`SITE.md`** before adding a page under `(site)`, and
+**`PLACEHOLDERS.md`** before publishing content on it.
+
 ## Stack
 
 | Piece | Version | Notes |

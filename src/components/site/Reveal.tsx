@@ -13,13 +13,16 @@ import { Box } from "@mui/material";
  *
  * Correct first paint matters more than the effect. The server-rendered markup
  * carries `data-reveal="out"`, the CSS that hides an "out" element is wrapped in
- * `prefers-reduced-motion: no-preference`, and the homepage ships a `<noscript>`
+ * `prefers-reduced-motion: no-preference`, and each page ships a `<noscript>`
  * rule that unhides everything — so a visitor with reduced motion on, or with
  * JavaScript off, gets the final state immediately with no animation and no
  * flash.
  *
  * Only opacity and transform animate and the wrapper occupies its space from the
  * first frame, so the reveal contributes no layout shift.
+ *
+ * (Moved here from `src/components/home` when the public website replaced the
+ * portal-gateway landing page. The behaviour is unchanged.)
  */
 export default function Reveal({
   children,

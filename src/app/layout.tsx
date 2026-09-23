@@ -44,6 +44,15 @@ export const metadata: Metadata = {
   },
   description:
     "Streamline school management, class organization, attendance tracking and communication between students, teachers and administrators.",
+  // Default-deny for crawlers. This layout wraps everything that is not part of
+  // the public website — the sign-in screens, the first-run setup screen and
+  // every role portal — and none of it belongs in a search index. The public
+  // website's own layout (`src/app/(site)/layout.tsx`) overrides this with
+  // `index: true`, so the brochure is still findable and the portal is not.
+  robots: {
+    index: false,
+    follow: false,
+  },
   // The favicon, icon, and apple-icon are the school crest derived from
   // `public/lucky_star_logo.png` and served as `favicon.ico`, `icon.png`, and
   // `apple-icon.png` in this `app/` directory via the App Router file
