@@ -287,29 +287,60 @@ smuggling an unrelated schema change into this work.
 
 ## Still not verified
 
-**Neither portal has been signed into.** The `SUPABASE_SECRET_KEY` in
-`.env.local` is rejected by the Auth admin API (401) with it sent as `apikey`,
-as a Bearer token, and as both, while the publishable key works against the same
-project — so it is stale or revoked. Every path that uses the admin client is
-therefore untested end to end: `/admin/staff` (which mints the two new account
-types), `/admin/teachers/add`, `/admin/students/add`, school registration, and
-`scripts/seed.mjs`. No `accountant` or `schedule_officer` account exists yet, so
-the accountant and schedule officer pages have never rendered against real data,
-and `scripts/verify-rls.mjs` has not been run for this change.
+**Neither portal has been signed into**, because no `accountant` or
+`schedule_officer` account exists yet. The RLS work *is* verified — section 24
+forges the two roles' JWT claims directly, which is why it can prove their
+boundaries without a real account. What that does not cover is the application
+layer above it: `createOfficeStaffAction`, the server actions, the timetable
+write path through the UI, and the guards in `src/lib/auth/session.ts`.
 
-The RLS work *is* verified — section 24 forges the two roles' JWT claims
-directly, which is why it can prove their boundaries without a real account. What
-that does not cover is the application layer above it: the server actions, the
-timetable write path through the UI, and the guards in `src/lib/auth/session.ts`.
+### The secret key: resolved, and how it was misdiagnosed
 
-**One thing worth flagging that the suites cannot check:** `db push` connected
-using CLI credentials, and the 24-hour MCP token used for the run above carries
-`projects:write database:write`. Neither is the app's runtime key, so neither
-proves the deployed environment is configured.
+An earlier revision of this file recorded `SUPABASE_SECRET_KEY` as dead, on the
+evidence that the Auth admin API returned 401 with the key sent as `apikey`, as
+a Bearer token, and as both. That was true of the value in `.env.local` at the
+time — a 41-character `sb_secret_…` — but the finding was **overtaken**:
+`.env.local` was subsequently rewritten (mtime 09:52:54) with a 219-character
+legacy `eyJ…` service-role JWT, and that one works. The Auth admin API returns
+the user list with `apikey` + `Authorization: Bearer`, and PostgREST returns
+every row with RLS bypassed.
 
-First check once a fresh secret key is in place: run `scripts/seed.mjs --reset`
-(the seed now creates one account of each new role), then walk both portals at
-desktop and 360px.
+Two lessons worth keeping:
+
+- **A key can be rotated under you mid-investigation.** The mtime of the env file
+  is part of the evidence, and re-checking it costs nothing.
+- **"Rejected in every header mode" was not a valid conclusion** from the modes
+  tried. New-style `sb_secret_…` keys and legacy `service_role` JWTs are
+  authenticated differently, and `src/lib/supabase/env.ts` accepts either, so a
+  test that fails one format says nothing about the other.
+
+### The dangerous instruction that was here
+
+This section previously ended by telling the reader to run
+`node --env-file=.env.local scripts/seed.mjs --reset` to create one account of
+each new role. **Do not do that on a database with real data.** `removeSeededData()`
+deletes every seeded auth user and then deletes the **school row**, which
+cascades to classes, students, subjects, notices, complaints, attendance,
+exam_results, teacher_attendance, every `fee_*` table, `admissions`, `incidents`
+and `terms`. It is a full tenant wipe, not a re-seed, and it is the wrong way to
+get two accounts created.
+
+The safe path is the feature itself: sign in as an administrator and use
+`/admin/staff`, which creates exactly one auth user and one profile row through
+`createOfficeStaffAction` → `createManagedUser`. That also exercises the code
+path this change added, which is the thing that actually needs testing.
+
+---
+
+## Known pre-existing issue, not addressed here
+
+`supabase/verify.sql` check 7c reports 2 unindexed foreign-key columns:
+`admissions.created_by` and `incidents.recorded_by`, from
+`20260101000700_admissions_campus` and `20260101000800_welfare_incidents`. Both
+are `ON DELETE SET NULL`, so an unindexed column costs a scan of that table when
+a user is deleted — a performance nit, not a correctness or security problem,
+and unrelated to the office-staff work. Recorded rather than quietly fixed, so
+that the next person to run the checklist knows the two rows are expected.
 
 ---
 
@@ -319,6 +350,8 @@ Any change to a view, a policy, the seed, or the auth claims should be followed
 by:
 
 ```bash
+# WARNING: --reset deletes the school row and cascades to every tenant table.
+# It is for a scratch database only, never one holding real records.
 node --env-file=.env.local scripts/seed.mjs --reset   # only if the seed changed
 node --env-file=.env.local scripts/verify-rls.mjs     # must exit 0
 ```
