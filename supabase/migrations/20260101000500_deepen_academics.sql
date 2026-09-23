@@ -164,7 +164,7 @@ where s.enrolled_at is not null
 group by s.school_id, s.class_id, c.name, c.campus, t.id, t.name, t.term_number;
 
 comment on view public.v_enrolment_trend_by_class_campus is
-  'Pupils enrolled into each class and campus per term, from students.enrolled_at. '
+  'Pupils enrolled into each class and campus per term, from students.enrolled_at. ';
 
 
 -- Retention vs dropout per term, counted in the term where a pupil''s status
