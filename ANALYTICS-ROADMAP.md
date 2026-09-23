@@ -24,8 +24,10 @@ If a phase is declined, it is recorded here and the next approved one proceeds.
 - **Term calendar:** three terms per year, already in `public.terms`.
 - **Reference data:** fetches, budget lines and capacity are the school's own
   numbers. None is guessed.
-- **Role model:** exactly three roles today — `admin`, `teacher`, `student`.
-  Nothing in this roadmap adds a fourth.
+- **Role model:** five roles now — `admin`, `teacher`, `student`, `accountant`
+  and `schedule_officer`. The last two arrived with their own portals and
+  changed nothing on this roadmap except the fee and timetable views noted
+  below. Nothing here adds a sixth.
 
 ---
 
@@ -138,7 +140,7 @@ columns), **Not applicable** (why).
 | LMS adoption and assignment submissions | There is no LMS. The school records marks directly; there is no submission/deadline pipeline to adopt. |
 | Device usage | No devices are tracked; this is not a school-facing metric, and tracking a children's school system should be a deliberate decision. |
 | Bus routes and transport | No bus fleet. It is a walking school; there is no transport data or provider. |
-| Classroom and lab utilisation heat maps | No timetable of classroom bookings, no labs. `subjects.sessions` is free text ("Mon, Wed"), not periods; a utilisation heat map needs slots that do not exist. |
+| Classroom and lab utilisation heat maps | No timetable of classroom bookings, no labs. `subjects.sessions` is free text ("Mon, Wed"), not periods. **Partly unblocked:** `public.timetable_slots` now models day/period/room for the Schedule Officer portal, so *classroom* utilisation is now computable. Lab utilisation is still not — there is no room register, no capacity and no lab flag, and `timetable_slots.room` is nullable free text rather than a foreign key. |
 | Radar charts of teacher evaluation scores | No evaluation/observation process is recorded; and radar charts are not a form the app uses. |
 
 ---

@@ -1,9 +1,15 @@
 # Lucky Star Academy — UI redesign decisions
 
-Scope: every surface a user sees — landing, auth, shell, the three portals, list
+Scope: every surface a user sees — landing, auth, shell, every portal, list
 pages, detail pages, forms and empty states. Presentation only: no data layer,
 server actions, auth, RLS, routing or `src/lib/**` / `supabase/**` changes.
 Spelling of routes, every feature and every piece of information stays as it is.
+
+(Originally written when the system had three portals. The accountant and
+schedule officer portals added later reuse the same shell, cards and form
+patterns rather than introducing new ones, so every decision below still holds
+for them — the five role cards on the landing page are the same card component
+at the same radius and the same gold-badge numeral treatment.)
 
 This note records the decisions. Nothing has been edited yet — a go-ahead is
 required before touching components.

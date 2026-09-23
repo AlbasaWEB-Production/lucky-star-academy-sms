@@ -445,3 +445,116 @@ Lighthouse's own Chrome launch should be bypassed entirely by pointing it at a
 Chrome on a CDP port (`--port`), so it neither launches nor kills a browser.
 Reading the overall score alone would have hidden all of this behind three
 plausible-looking numbers.
+
+---
+
+## 17. The Schedule Officer got a timetable, because it had nothing else
+
+**Decision.** Adding the `schedule_officer` role included creating a timetable:
+a new `public.timetable_slots` table (subject, day 1–5, period 1–12, room), a
+`v_timetable_weekly` read view, and read/write policies for the role. The role
+was not given a read-only tour of existing pages.
+
+**Why.** The client asked for two more sign-in cards. The accountant had a
+domain already — `fee_structures`, `fee_assessments`, `fee_payments`,
+`expenses`, `budget_lines` and five finance views all existed — so the role was
+a matter of scoping. The schedule officer had *nothing*. `subjects.sessions` is
+free text ("Mon, Wed"), and `ANALYTICS-ROADMAP.md` and `DASHBOARD_BACKLOG.md`
+both record the consequence: no classroom utilisation heat map, no
+period-level anything, because there are no slots to hang it on.
+
+A portal whose every page is some other role's data would be a card that opens
+onto a mirror. So the missing model was built, scoped to exactly what the role
+needs and no further: a slot names a subject (which already carries its class
+and its teacher, so neither is duplicated and neither can drift), a day, a
+period and an optional room.
+
+**Consequence, and the honest cost.** This is a new module, not a scoping
+exercise — the largest single piece of this change, and it is the piece that
+was *not* asked for by name. It also does not by itself deliver the backlog
+items: a classroom utilisation heat map needs room capacity and a bookings
+concept that a weekly grid still does not provide. What it does deliver is the
+slot model those items were blocked on.
+
+**Alternative rejected:** give the schedule officer read access to
+`classes`/`subjects`/`teachers` and call it a portal. It would have satisfied
+the literal request — two more cards, two more sign-in pages — while producing a
+role that cannot do anything, and it would have needed revisiting the moment the
+client asked what the officer was supposed to *do*.
+
+---
+
+## 18. Office staff accounts are created by the admin, unlike administrator accounts
+
+**Decision.** `/admin/staff` has add and delete controls. `/admin/admins` stays
+read-only.
+
+**Why.** This looks inconsistent next to Decision "administrator accounts are
+never minted from inside the portal", so it is worth stating why it is not. The
+exclusion on `/admin/admins` is about *privilege*: an administrator reaches
+every table in the school, so a staff member who could mint one could mint
+themselves an upgrade. The accountant and the schedule officer are the opposite
+— each holds a narrow, disjoint slice (finance, or the timetable), neither can
+write `profiles`, and neither can create the other, because
+`createOfficeStaffAction` requires the admin role.
+
+Against that, the alternative is worse: with no add control, provisioning an
+accountant means a developer running SQL against production. A school office
+hires and releases staff; it should not need an engineer to do it. So the
+narrow roles are manageable from the portal and the privileged one is not.
+
+**Also decided here:** the role picker is a select on one form rather than two
+separate pages, because the two accounts differ only in what RLS lets them
+reach. The server action validates the posted role against a closed set, so the
+picker is a convenience and not the control. An account's role is not editable
+after creation — changing a role is a privilege change, which is the same reason
+`profiles` pins `role` in its own update policy. A wrong role is fixed by
+deleting the account and creating the right one.
+
+**Left alone on purpose:** `getDashboardStats()` and `PeopleBreakdown` still
+count three groups (students, teachers, administrators), and the admin
+dashboard's people chart is unchanged. `PAGE-CONVENTIONS.md` pins that chart's
+shape ("administrators are always the third group"), it has been reviewed and
+screenshotted as it stands, and a fourth and fifth bar is a dashboard redesign
+rather than a consequence of adding two roles. Office staff are still visible —
+they have their own row in the sidebar's People section and their own page — so
+nothing is hidden; the *aggregate* simply does not count them yet. Worth doing,
+but as its own change with its own before/after.
+
+**Notices are read-only in both new portals, and the policies say so.**
+`createNoticeAction` is admin-only and hard-codes `/admin/notices` for both its
+`revalidatePath` and its `redirect`, so letting an accountant publish a notice
+would mean threading a per-role destination through a shared action — and the
+destination would have to be validated against a role allowlist, since a hidden
+form field is user input. That is a real change with a real failure mode, and
+nobody asked for it: the school's notices are published by the office. So both
+new roles get **select** on `notices` and nothing more, which keeps the policy
+ceiling exactly level with what the UI can do. Widening it later means the
+action change *and* the grant together, not the grant alone.
+
+---
+
+## 19. `roleHome` and the route prefix are derived, not repeated
+
+**Decision.** `roleSlug`, `rolePrefix`, `roleHome` and `roleLabel` all live in
+one client-safe module, `src/lib/auth/roles.ts`. `roleHome` is computed from
+`roleSlug`, and `proxy.ts` reads `rolePrefix`/`roleHome` from it instead of
+keeping its own copies.
+
+**Why.** `DASHBOARD_PLAN.md` § 9 already flagged this shape of risk when it
+listed "a second place a role's landing page is defined" as a reason not to add
+a role lightly. At three roles the duplication was tolerable; at five it is a
+trap, because the failure mode is silent — a role present in `proxy.ts` but
+missing from `roleHome` produces a redirect loop, not an error, and a redirect
+loop looks like a hung page rather than a bug with a location.
+
+**Not put in `session.ts`, which is where it used to be.** `session.ts` reaches
+`next/headers` through the Supabase server client, so a client component cannot
+import it. `AppShell` needs `roleLabel` to render "Schedule Officer portal" —
+`role.charAt(0).toUpperCase() + role.slice(1)` produces "Schedule_officer" —
+so the pure data had to move somewhere with no server import. `UserRole` is a
+type-only import there, so nothing is pulled into the browser bundle.
+
+**Alternative rejected:** pass the label into `AppShell` as a prop from each
+layout. It works, and it is one fewer module — but it puts the same string in
+five layouts and leaves the underscore bug reachable from any new one.

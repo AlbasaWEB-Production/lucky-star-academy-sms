@@ -181,6 +181,16 @@ and a period number), or `subjects.periods_per_week integer`. A timetable is the
 real answer and would also unblock "which classes still need marking today"
 becoming "which *periods*", which is closer to what a teacher actually needs.
 
+**Update — the first half now exists.** `public.timetable_slots` (subject, day
+1–5, period 1–12, room) was added for the Schedule Officer portal, with
+`v_timetable_weekly` to read it. So this item is now unblocked and is a matter
+of counting slots per teacher rather than of modelling them. Two caveats before
+anyone builds it: the grid is a *plan*, not a record of what happened, so
+"periods per teacher" will describe the timetable rather than the teaching; and
+nothing here records that a lesson was cancelled, so the two can legitimately
+disagree. The second half of the item — "which periods still need marking" —
+needs `attendance` to gain a period or slot reference, which it does not have.
+
 ### 11. Marks over time
 
 **The gap:** the brief asks for "class average per subject across the last 3

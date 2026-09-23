@@ -211,6 +211,47 @@ worse than none.
 4. **`anon` was not tested**, because these objects are granted to
    `authenticated` only. An unauthenticated request is refused at the grant
    before any policy is consulted.
+5. **The two office-staff roles are not measured by this document.**
+   `accountant` and `schedule_officer` were added after it was written, and
+   neither reads the dashboard views this page is about — so the table above is
+   unchanged and still correct for the roles it names. Their coverage is the new
+   section 24 of `supabase/tests/rls_test.sql`, which asserts each reaches its
+   own domain and is refused everywhere else (no fees for the schedule officer,
+   no register for the accountant, no `profiles` write for either, and
+   `v_budget_vs_actual` still empty for the accountant). `scripts/verify-rls.mjs`
+   does not yet sign in as them; doing so means extending its cast list, and the
+   seed now creates one account of each role for exactly that purpose.
+   **Neither suite has been executed against a live project as part of this
+   change** — see the note at the end of this section.
+
+---
+
+## Not run as part of the office-staff change
+
+The two new roles and the timetable were added without a database to run against:
+no Docker (so no local Supabase), no `psql`, and no linked project, so
+`supabase db push` cannot be used here. Concretely, that means:
+
+- The two migrations in `supabase/migrations/202601010009*.sql` have been
+  **reviewed line by line but never executed**. The SQL is not known to parse,
+  let alone to apply.
+- The new probes in `supabase/tests/rls_test.sql` section 24 have never been run,
+  so their expected counts are reasoned, not observed.
+- The expectation numbers in `supabase/verify.sql` were derived by counting
+  every `create policy` across the migration files (20 tables, 109 policies),
+  not by querying `pg_policies`.
+
+The redeclared finance views were checked the one way available without a
+database: each of the four bodies in `20260101000950_staff_portals.sql` was
+diffed against its original in `20260101000400_analytics_fees.sql` and is
+identical except for the role gate. That matters because `create or replace
+view` would *not* error on a changed body — it only refuses changes to column
+names, types or order — so a careless edit there would have changed the numbers
+silently.
+
+First real check, in order: apply the two migrations, run `supabase/verify.sql`
+(expect zero rows from checks 1, 3, 6, 7, 7b and 7c), then run
+`supabase/tests/rls_test.sql` and require a clean PASS report.
 
 ---
 

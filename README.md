@@ -32,14 +32,21 @@ MIGRATION.md    full migration record: database design, security model, parity n
 
 ## Features
 
-- **User roles:** Admin, Teacher and Student. Each role has its own portal and
-  its own permissions, enforced by Row Level Security in the database.
-- **Admin:** add students, teachers, classes and subjects; assign teachers;
-  post notices; review complaints.
+- **User roles:** Administrator, Teacher, Student, Accountant and Schedule
+  Officer. Each role has its own portal, its own sign-in card, and its own
+  permissions, enforced by Row Level Security in the database.
+- **Admin:** add students, teachers, classes, subjects and the two office staff
+  accounts; assign teachers; post notices; review complaints.
 - **Attendance tracking:** teachers mark attendance per class and subject;
   re-submitting for the same day corrects rather than duplicates.
 - **Performance assessment:** teachers record exam marks; students view their
   marks and attendance, both with charts.
+- **Finance:** the administrator sets the fee policy and the budget; the
+  accountant issues the term's assessments, banks payments and records
+  expenses. Amounts are held as integer pesewas throughout.
+- **Timetable:** the schedule officer places each subject into the weekly grid
+  by day, period and room; a subject cannot be double-booked and a room cannot
+  host two lessons at once.
 - **Communication:** notices and a complaint flow between students and admin.
 
 ## Git branches

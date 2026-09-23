@@ -129,6 +129,13 @@ these steps, rather than failing on the first query.
 | `student.examResult[]` | `exam_results` (one row per student/subject) |
 | `teacher.attendance[]` | `teacher_attendance` (one row per teacher/day) |
 
+Five roles exist. The two that have no counterpart in the Mongo schema are
+`accountant` and `schedule_officer`, added so the school's finance desk and its
+timetable could have their own portals instead of sharing the administrator's
+login. The timetable they work in has no legacy equivalent either:
+`subjects.sessions` was free text, so `timetable_slots` is new rather than
+migrated.
+
 ### Normalisation decisions
 
 1. **Embedded arrays became tables.** Attendance and exam results were arrays
@@ -159,6 +166,19 @@ these steps, rather than failing on the first query.
    per-class scope would make login ambiguous. `unique (school_id, roll_number)`
    removes the ambiguity. This is a deliberate tightening of the original
    behaviour.
+
+6. **A timetable slot stores the subject, not the class or the teacher.**
+   `timetable_slots` has no `class_id` and no `teacher_id`. A subject already
+   carries both, so storing them again on the slot would recreate exactly the
+   duplication that decision 2 removed for subjects — two places to disagree
+   about who teaches what. The slot's composite foreign key
+   `(subject_id, school_id) → subjects (id, school_id)` proves same-school
+   membership, and the class and teacher are read through `v_timetable_weekly`.
+   Two partial unique indexes make the grid itself enforce the rules a timetable
+   has to obey: a subject cannot be in two places at once
+   (`unique (subject_id, day_of_week, period)`), and a room cannot host two
+   lessons at once (`unique (school_id, day_of_week, period, room) where room is
+   not null` — partial so that any number of slots may have no room yet).
 
 ### Intentional behaviour changes
 
@@ -212,11 +232,40 @@ after such a change the user must sign in again.
 | `fee_assessments` | read/write all | read only classes they teach | own only |
 | `fee_payments` | read/write, delete; "reverse" via compensating row | none | own payments, read only |
 
+The two office-staff roles added later each reach one domain and read the roster
+around it:
+
+| Table | accountant | schedule_officer |
+| --- | --- | --- |
+| `schools`, `profiles`, `classes`, `students`, `terms` | read own school | read own school |
+| `subjects` | read own school | read/write own school |
+| `timetable_slots` | none | read/write own school |
+| `fee_structures`, `budget_lines` | read only | none |
+| `fee_assessments`, `fee_payments`, `expenses` | read/write own school | none |
+| `attendance`, `exam_results`, `teacher_attendance`, `complaints` | none | none |
+| `notices` | read only | read only |
+
+Neither may write `profiles` or `schools`, and neither may reach the other's
+tables. `notices` is read-only for both: `createNoticeAction` is admin-only and
+hard-codes its `/admin/notices` destination, so the policy ceiling is kept level
+with what the UI can actually do (see `DECISIONS.md` § 18). Note the asymmetry
+inside finance: an accountant may write assessments,
+payments and expenses, but **may not** write `fee_structures` or `budget_lines`
+— setting the fee policy and setting a budget are management decisions, and the
+admin-only views for them are not widened. Reversing a payment already banked
+stays admin-only for the same reason. Likewise a schedule officer may edit a
+subject (its `sessions` text and its teacher) because that is what the timetable
+is built from, but may not touch anything academic.
+
 The finance tables and views are delegated to RLS exactly like the others; the
 role-scoped `security_invoker` views appends finance aggregates and are
-admin-only (see "Analytics expansion" below). Details, including the `WITH
-CHECK` clauses that stop privilege escalation, are in
-`20260101000100_rls_policies.sql`.
+admin-only — **except** `v_fee_status_by_student`, `v_fees_collected_vs_expected`,
+`v_outstanding_by_class` and `v_cash_position`, whose in-view role gate was
+widened to `in ('admin', 'accountant')` so the accountant portal is not looking
+at four empty panels. `v_budget_vs_actual` stays admin-only (see "Analytics
+expansion" below). Details, including the `WITH CHECK` clauses that stop
+privilege escalation, are in `20260101000100_rls_policies.sql` and
+`20260101000950_staff_portals.sql`.
 
 ### Notable hardening, and the traps avoided
 

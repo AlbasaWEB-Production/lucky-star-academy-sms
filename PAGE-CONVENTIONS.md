@@ -52,6 +52,13 @@ scopes every query automatically:
 | admin | every student in their school | anything in their school |
 | teacher | students in the classes they teach | attendance/marks for their own subjects only |
 | student | only themselves | their own complaint row |
+| accountant | every student in their school | fee assessments, payments and expenses |
+| schedule_officer | every student in their school | timetable slots and subjects |
+
+The accountant and the schedule officer are staff, so they read the school
+roster, but each writes in exactly one domain. Neither may touch the other's
+tables, and neither may write `profiles`: an accountant cannot promote itself to
+an admin, and a schedule officer cannot issue a fee assessment.
 
 So a new read helper usually needs no school filter either. Do not add one,
 and do not add a role check to a read — if a page shows the wrong rows, the
@@ -148,11 +155,25 @@ Some actions `redirect()` on success (create/update) and some return
 ### Auth — `@/lib/auth/session`
 
 `requireSessionUser`, `requireRole`, `requireTenant`,
-`requireRoleWithTenant`, `requireStaffWithTenant`, `roleHome`.
+`requireRoleWithTenant`, `requireStaffWithTenant`, `requireFinanceWithTenant`,
+`requireTimetableWithTenant`.
+
+`requireStaffWithTenant` means **admin or teacher** and is what the academic
+record actions use. The two office-staff roles are deliberately not "staff"
+there — an accountant has no business in `attendance` or `exam_results` — so
+they get their own guards: `requireFinanceWithTenant` (admin or accountant) and
+`requireTimetableWithTenant` (admin or schedule officer).
+
+`@/lib/auth/roles` is the pure, client-safe half: `roleSlug`, `rolePrefix`,
+`roleHome`, `roleLabel`, `ROLE_ORDER`, `EMAIL_SIGN_IN_ROLES`, `isUserRole`.
+Adding a role means extending those records and letting the compiler point at
+every `Record<UserRole, …>` that needs the new value. `roleHome` is derived from
+`roleSlug`, so a role's URL is defined once. It has no server import on purpose:
+`AppShell` is a client component and needs `roleLabel`.
 
 Role layouts already call `loadShellContext(role)` (`@/lib/auth/shell-context`),
-so **pages do not need to re-check the role** — the `/admin`, `/teacher` and
-`/student` layouts have already done it.
+so **pages do not need to re-check the role** — the `/admin`, `/teacher`,
+`/student`, `/accountant` and `/schedule` layouts have already done it.
 
 ### UI — `@/components/ui/*`
 
@@ -292,6 +313,11 @@ Rules that follow from that:
   writes `?q=` (debounced) and the server re-renders. No `"use client"` list, no
   filter callback passed down, and no new query parameters reach Supabase —
   matching is done in memory over the rows RLS already returned.
+- **`SearchBar` merges rather than replaces the query string.** A page may carry
+  a second filter beside the search (the accountant's fee list has `?term=`), and
+  the search preserves it. It reads the URL from `window.location` inside its
+  event handler rather than through `useSearchParams()`, precisely so that
+  mounting it never forces a page into a `<Suspense>` boundary.
 - **Search matches the columns the table shows**, case-insensitively — usually
   names, codes and classes. Numbers (roll number, counts) are matched through
   `String(field)` so `string | number` columns typecheck.
