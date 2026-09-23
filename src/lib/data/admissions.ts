@@ -1,5 +1,6 @@
 import "server-only";
 
+import { compareByCampusThenClass } from "@/lib/class-order";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdmissionStage } from "@/lib/admissions";
 
@@ -147,18 +148,26 @@ export async function listAdmissionsFunnel(): Promise<AdmissionsFunnel[]> {
  */
 export async function listNewEnrolmentsByClassIntake(): Promise<NewEnrolmentsByClassIntake[]> {
   const supabase = await createSupabaseServerClient();
+  // Sorted in JS, not by the view's `order by t.term_number, class_name`: the
+  // class half of that was alphabetical, which puts KG before Nursery. See
+  // `@/lib/class-order`.
   const { data } = await supabase
     .from("v_new_enrolments_by_class_intake")
     .select("class_id, class_name, campus, term_id, term_name, term_number, enrolled");
-  return (data ?? []).map((row) => ({
-    classId: row.class_id,
-    className: row.class_name,
-    campus: row.campus,
-    termId: row.term_id,
-    termName: row.term_name,
-    termNumber: row.term_number === null ? null : Number(row.term_number),
-    enrolled: Number(row.enrolled),
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      classId: row.class_id,
+      className: row.class_name,
+      campus: row.campus,
+      termId: row.term_id,
+      termName: row.term_name,
+      termNumber: row.term_number === null ? null : Number(row.term_number),
+      enrolled: Number(row.enrolled),
+    }))
+    .sort(
+      (a, b) =>
+        (a.termNumber ?? 0) - (b.termNumber ?? 0) || compareByCampusThenClass(a, b),
+    );
 }
 
 /**
@@ -167,15 +176,19 @@ export async function listNewEnrolmentsByClassIntake(): Promise<NewEnrolmentsByC
  */
 export async function listCapacityUtilisation(): Promise<CapacityUtilisation[]> {
   const supabase = await createSupabaseServerClient();
+  // Sorted in JS for the same reason: the view's `order by c.campus, c.name`
+  // read KG before Nursery.
   const { data } = await supabase
     .from("v_capacity_utilisation")
     .select("class_id, class_name, campus, capacity, pupil_count, utilisation_percent");
-  return (data ?? []).map((row) => ({
-    classId: row.class_id,
-    className: row.class_name,
-    campus: row.campus,
-    capacity: row.capacity === null ? null : Number(row.capacity),
-    pupilCount: Number(row.pupil_count),
-    utilisationPercent: row.utilisation_percent === null ? null : Number(row.utilisation_percent),
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      classId: row.class_id,
+      className: row.class_name,
+      campus: row.campus,
+      capacity: row.capacity === null ? null : Number(row.capacity),
+      pupilCount: Number(row.pupil_count),
+      utilisationPercent: row.utilisation_percent === null ? null : Number(row.utilisation_percent),
+    }))
+    .sort(compareByCampusThenClass);
 }

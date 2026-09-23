@@ -1,5 +1,6 @@
 import "server-only";
 
+import { compareByCampusThenClass } from "@/lib/class-order";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Incident type helpers live in `@/lib/incidents` (client-safe); re-export the
@@ -132,17 +133,22 @@ export async function listIncidentsByType(): Promise<IncidentsByType[]> {
  */
 export async function listIncidentsPerHundredByClass(): Promise<IncidentsPerHundredByClass[]> {
   const supabase = await createSupabaseServerClient();
+  // Ordered in JS, not by the view's `order by c.campus, c.name`: alphabetically
+  // "KG 1" precedes "Nursery 1", the reverse of the school's progression. See
+  // `@/lib/class-order`.
   const { data } = await supabase
     .from("v_incidents_per_hundred_by_class")
     .select("class_id, class_name, campus, incidents, active_pupils, per_hundred");
-  return (data ?? []).map((row) => ({
-    classId: row.class_id,
-    className: row.class_name,
-    campus: row.campus,
-    incidents: Number(row.incidents),
-    activePupils: Number(row.active_pupils),
-    perHundred: row.per_hundred === null ? null : Number(row.per_hundred),
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      classId: row.class_id,
+      className: row.class_name,
+      campus: row.campus,
+      incidents: Number(row.incidents),
+      activePupils: Number(row.active_pupils),
+      perHundred: row.per_hundred === null ? null : Number(row.per_hundred),
+    }))
+    .sort(compareByCampusThenClass);
 }
 
 /**

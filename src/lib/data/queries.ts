@@ -1,5 +1,6 @@
 import "server-only";
 
+import { compareClassNames } from "@/lib/class-order";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -169,11 +170,16 @@ export type ClassSummary = {
 export async function listClasses(): Promise<ClassSummary[]> {
   const supabase = await createSupabaseServerClient();
 
-  const { data: classes } = await supabase.from("classes").select("id, name").order("name");
+  // Fetched unordered and sorted below: PostgREST cannot order by a computed
+  // expression, and `order("name")` put KG before Nursery. See
+  // `@/lib/class-order` for why the progression is not alphabetical.
+  const { data: classes } = await supabase.from("classes").select("id, name");
 
   if (!classes || classes.length === 0) {
     return [];
   }
+
+  classes.sort((a, b) => compareClassNames(a.name, b.name));
 
   const classIds = classes.map((row) => row.id);
 

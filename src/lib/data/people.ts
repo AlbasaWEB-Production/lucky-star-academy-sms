@@ -1,5 +1,6 @@
 import "server-only";
 
+import { compareByCampusThenClass } from "@/lib/class-order";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -65,20 +66,23 @@ export type UncoveredSubject = {
 export async function listPupilTeacherRatio(): Promise<PupilTeacherRatio[]> {
   const supabase = await createSupabaseServerClient();
 
+  // Ordered in JS rather than with `.order("class_name")`: alphabetically "KG 1"
+  // comes before "Nursery 1", which is the reverse of the school's progression.
+  // See `@/lib/class-order`.
   const { data } = await supabase
     .from("v_pupil_teacher_ratio")
-    .select("class_id, class_name, campus, pupil_count, teacher_count, ratio")
-    .order("campus")
-    .order("class_name");
+    .select("class_id, class_name, campus, pupil_count, teacher_count, ratio");
 
-  return (data ?? []).map((row) => ({
-    classId: row.class_id,
-    className: row.class_name,
-    campus: row.campus,
-    pupilCount: Number(row.pupil_count),
-    teacherCount: Number(row.teacher_count),
-    ratio: row.ratio == null ? null : Number(row.ratio),
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      classId: row.class_id,
+      className: row.class_name,
+      campus: row.campus,
+      pupilCount: Number(row.pupil_count),
+      teacherCount: Number(row.teacher_count),
+      ratio: row.ratio == null ? null : Number(row.ratio),
+    }))
+    .sort(compareByCampusThenClass);
 }
 
 /**

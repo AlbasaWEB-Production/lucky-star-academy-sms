@@ -1,5 +1,6 @@
 import "server-only";
 
+import { compareClassNames } from "@/lib/class-order";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listSubjects } from "@/lib/data/queries";
 
@@ -189,7 +190,9 @@ export async function summariseTimetableCoverage(): Promise<ClassTimetableCovera
   const supabase = await createSupabaseServerClient();
 
   const [{ data: classes }, { data: subjects }, { data: slots }] = await Promise.all([
-    supabase.from("classes").select("id, name").order("name"),
+    // Unordered here and sorted with the school's progression below: the
+    // coverage table reads top-down as Nursery, KG, Primary, not alphabetically.
+    supabase.from("classes").select("id, name"),
     supabase.from("subjects").select("id, class_id"),
     supabase.from("timetable_slots").select("subject_id"),
   ]);
@@ -206,20 +209,23 @@ export async function summariseTimetableCoverage(): Promise<ClassTimetableCovera
     byClass.set(subject.class_id, entry);
   }
 
-  return (classes ?? []).map((row) => {
-    const entry = byClass.get(row.id) ?? { subjectCount: 0, scheduledCount: 0 };
+  return (classes ?? [])
+    .slice()
+    .sort((a, b) => compareClassNames(a.name, b.name))
+    .map((row) => {
+      const entry = byClass.get(row.id) ?? { subjectCount: 0, scheduledCount: 0 };
 
-    return {
-      classId: row.id,
-      className: row.name,
-      subjectCount: entry.subjectCount,
-      scheduledCount: entry.scheduledCount,
-      percentage:
-        entry.subjectCount > 0
-          ? Math.round((entry.scheduledCount / entry.subjectCount) * 1000) / 10
-          : 0,
-    };
-  });
+      return {
+        classId: row.id,
+        className: row.name,
+        subjectCount: entry.subjectCount,
+        scheduledCount: entry.scheduledCount,
+        percentage:
+          entry.subjectCount > 0
+            ? Math.round((entry.scheduledCount / entry.subjectCount) * 1000) / 10
+            : 0,
+      };
+    });
 }
 
 /**
