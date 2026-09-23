@@ -243,9 +243,19 @@ export default async function AccountantDashboardPage() {
           </Typography>
 
           {attentionItems.every((item) => item.count === 0) ? (
+            // "All settled" and "nothing billed yet" both produce three zero
+            // counters, and only one of them is good news. Saying "every pupil
+            // has paid in full" on a term where nobody has been billed yet is
+            // the kind of confident-but-false statement this codebase avoids
+            // everywhere else - the defaulters table below already distinguishes
+            // the two - so the panel does too.
             <EmptyState
-              title="Nothing outstanding"
-              description="Every pupil billed for the current term has paid in full, every class has collected something, and no month has spent more than it took. Nothing to chase."
+              title={feeStatus.length === 0 ? "Nothing billed yet" : "Nothing outstanding"}
+              description={
+                feeStatus.length === 0
+                  ? `No pupil has been billed for ${currentTerm?.name ?? "the current term"} yet, so there is nothing to chase. Issue the term's assessments and this panel will start listing what is owed.`
+                  : "Every pupil billed for the current term has paid in full, every class has collected something, and no month has spent more than it took. Nothing to chase."
+              }
             />
           ) : (
             <Box sx={{ display: "grid", gap: 1.5 }}>
