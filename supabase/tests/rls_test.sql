@@ -735,7 +735,13 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"admin","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
 insert into rls_results (probe, observed, expected) values
-  ('admin A sees the ratio for both its classes',          (select count(*) from public.v_pupil_teacher_ratio), 2),
+  -- 3, not 2. School A gained the "Probe class" at the cross-tenant control in
+  -- section 8, and these per-class roll-ups correctly return a row for it even
+  -- though it has no pupils and no attendance. The expectation was left at the
+  -- pre-control count of 2, which made this probe - and the two equivalent ones
+  -- in sections 20 and 23 - permanently red. Fixed here; they were failing
+  -- before the office-staff work touched the file.
+  ('admin A sees the ratio for all three classes',         (select count(*) from public.v_pupil_teacher_ratio), 3),
   ('admin A sees no ratio rows for school B',              (select count(*) from public.v_pupil_teacher_ratio where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
   ('admin A sees attendance for both its teachers',        (select count(*) from public.v_teacher_attendance_rate), 2),
   ('admin A sees no attendance rows for school B',         (select count(*) from public.v_teacher_attendance_rate where school_id = 'b0000000-0000-4000-8000-000000000001'), 0);
@@ -828,7 +834,7 @@ insert into rls_results (probe, observed, expected) values
   ('admin A funnel counts only its own enrolled',       (select leads from public.v_admissions_funnel where stage = 'enrolled'), 1),
   ('admin A sees its own enrolments by class & term',   (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'a0000000-0000-4000-8000-000000000001'), 1),
   ('admin A sees no school B enrolments',               (select count(*) from public.v_new_enrolments_by_class_intake where school_id = 'b0000000-0000-4000-8000-000000000001'), 0),
-  ('admin A sees both classes in capacity',             (select count(*) from public.v_capacity_utilisation), 2),
+  ('admin A sees all three classes in capacity',        (select count(*) from public.v_capacity_utilisation), 3),
   ('admin A capacity A1 is 50%',                        (select utilisation_percent::bigint from public.v_capacity_utilisation where class_id = 'a4000000-0000-4000-8000-000000000001'), 50),
   ('admin A capacity A2 is honest (no capacity set)',   (case when (select utilisation_percent from public.v_capacity_utilisation where class_id = 'a4000000-0000-4000-8000-000000000002') is null then 1 else 0 end), 1);
 
@@ -927,7 +933,7 @@ insert into rls_results (probe, observed, expected) values
   ('admin A sees all six incident types',           (select count(*) from public.v_incidents_by_type), 6),
   ('admin A by-type counts its own lateness',       (select incident_count from public.v_incidents_by_type where incident_type = 'lateness'), 1),
   ('admin A by-type resolved/unresolved split',     (select unresolved_count from public.v_incidents_by_type where incident_type = 'fighting'), 1),
-  ('admin A sees both classes by rate',             (select count(*) from public.v_incidents_per_hundred_by_class), 2),
+  ('admin A sees all three classes by rate',        (select count(*) from public.v_incidents_per_hundred_by_class), 3),
   ('admin A rate for class A1',                     (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'a4000000-0000-4000-8000-000000000001'), 200),
   ('admin A rate for class A2',                     (select per_hundred::bigint from public.v_incidents_per_hundred_by_class where class_id = 'a4000000-0000-4000-8000-000000000002'), 100);
 
@@ -1047,9 +1053,14 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"a9000000-0000-4000-8000-000000000001","role":"authenticated","app_metadata":{"role":"accountant","school_id":"a0000000-0000-4000-8000-000000000001"}}';
 
 insert into rls_results (probe, observed, expected) values
-  -- Its own domain, in full.
+  -- Its own domain, in full. The counts are the state at THIS point in the file,
+  -- which is why section 24 runs last: earlier sections' positive controls have
+  -- already added a "Probe class" to school A (section 8), a fourth payment
+  -- (section 18) and an incident (section 23). Both figures below are those
+  -- post-control totals - get them from the controls, never from the section 11
+  -- fixtures, or they go stale the moment a control is added.
   ('accountant A sees its school''s assessments',           (select count(*) from public.fee_assessments), 2),
-  ('accountant A sees its school''s payments',              (select count(*) from public.fee_payments), 3),
+  ('accountant A sees its school''s payments',              (select count(*) from public.fee_payments), 4),
   ('accountant A sees its school''s expenses',              (select count(*) from public.expenses), 2),
   ('accountant A sees its school''s budget lines',          (select count(*) from public.budget_lines), 2),
   ('accountant A sees the fee structure it bills against',  (select count(*) from public.fee_structures), 1),
@@ -1085,8 +1096,23 @@ insert into rls_results (probe, observed, expected) values
   ('accountant A sees no timetable slots',                  (select count(*) from public.timetable_slots), 0),
   ('accountant A sees no weekly timetable view',            (select count(*) from public.v_timetable_weekly), 0);
 
--- Escalation and out-of-domain writes. Each records observed = 1 only if the
--- offending statement unexpectedly SUCCEEDED.
+-- Escalation and out-of-domain writes.
+--
+-- These check ROWS AFFECTED, not just "did it throw", and that distinction is
+-- the whole trick. An RLS denial works in one of two ways, and only one of them
+-- is loud:
+--
+--   * WITH CHECK rejects the resulting row -> raises 42501, caught below;
+--   * no USING policy matches at all (the role has no write policy on the
+--     table, which is the case for every refusal here) -> the statement simply
+--     matches zero rows and returns quietly.
+--
+-- So a probe that only catches exceptions records "1, success!" for a write
+-- that did nothing at all - a false positive that reads as a security hole.
+-- `get diagnostics affected = row_count` after the statement is what makes
+-- these honest: 0 rows means the policy held, 1 means it did not. The existing
+-- escalation probes in section 10 do not need this because `profiles_update_self`
+-- *does* match the caller's own row, so their denial comes back as an error.
 do $$
 begin
   begin
@@ -1151,11 +1177,14 @@ end;
 $$;
 
 do $$
+declare
+  affected integer;
 begin
   begin
     update public.students set roll_number = 99
      where id = 'a3000000-0000-4000-8000-000000000001';
-    insert into rls_results values ('accountant CANNOT edit the pupil roster', 1, 0);
+    get diagnostics affected = row_count;
+    insert into rls_results values ('accountant CANNOT edit the pupil roster', affected, 0);
   exception when others then
     insert into rls_results values ('accountant CANNOT edit the pupil roster', 0, 0);
   end;
@@ -1183,7 +1212,7 @@ insert into rls_results (probe, observed, expected) values
   -- Its own domain: the week, and what a week is built from.
   ('schedule officer A sees the week it maintains',         (select count(*) from public.timetable_slots), 3),
   ('schedule officer A sees the weekly view',               (select count(*) from public.v_timetable_weekly), 3),
-  ('schedule officer A sees the classes it schedules into', (select count(*) from public.classes), 2),
+  ('schedule officer A sees the classes it schedules into', (select count(*) from public.classes), 3),
   ('schedule officer A sees the subjects it places',        (select count(*) from public.subjects), 2),
   -- Not a convenience: assert_subject_teacher_is_teacher() is SECURITY INVOKER
   -- and looks the teacher up in profiles, so this read is what makes a teacher
@@ -1238,12 +1267,15 @@ end;
 $$;
 
 do $$
+declare
+  affected integer;
 begin
   begin
     -- The destructive one: deleting a subject would cascade into the attendance
     -- register and the mark sheet for every pupil who takes it.
     delete from public.subjects where id = 'a5000000-0000-4000-8000-000000000002';
-    insert into rls_results values ('schedule officer CANNOT delete a subject', 1, 0);
+    get diagnostics affected = row_count;
+    insert into rls_results values ('schedule officer CANNOT delete a subject', affected, 0);
   exception when others then
     insert into rls_results values ('schedule officer CANNOT delete a subject', 0, 0);
   end;
@@ -1276,11 +1308,14 @@ end;
 $$;
 
 do $$
+declare
+  affected integer;
 begin
   begin
     update public.classes set name = 'Renamed by the officer'
      where id = 'a4000000-0000-4000-8000-000000000001';
-    insert into rls_results values ('schedule officer CANNOT rename a class', 1, 0);
+    get diagnostics affected = row_count;
+    insert into rls_results values ('schedule officer CANNOT rename a class', affected, 0);
   exception when others then
     insert into rls_results values ('schedule officer CANNOT rename a class', 0, 0);
   end;

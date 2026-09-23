@@ -214,44 +214,102 @@ worse than none.
 5. **The two office-staff roles are not measured by this document.**
    `accountant` and `schedule_officer` were added after it was written, and
    neither reads the dashboard views this page is about — so the table above is
-   unchanged and still correct for the roles it names. Their coverage is the new
+   unchanged and still correct for the roles it names. Their coverage is
    section 24 of `supabase/tests/rls_test.sql`, which asserts each reaches its
    own domain and is refused everywhere else (no fees for the schedule officer,
    no register for the accountant, no `profiles` write for either, and
    `v_budget_vs_actual` still empty for the accountant). `scripts/verify-rls.mjs`
    does not yet sign in as them; doing so means extending its cast list, and the
    seed now creates one account of each role for exactly that purpose.
-   **Neither suite has been executed against a live project as part of this
-   change** — see the note at the end of this section.
 
 ---
 
-## Not run as part of the office-staff change
+## Applied and verified against the live project
 
-The two new roles and the timetable were added without a database to run against:
-no Docker (so no local Supabase), no `psql`, and no linked project, so
-`supabase db push` cannot be used here. Concretely, that means:
+The migrations were pushed and the suites run on **2026-09-23**, against the
+project this repo's `.env.local` points at.
 
-- The two migrations in `supabase/migrations/202601010009*.sql` have been
-  **reviewed line by line but never executed**. The SQL is not known to parse,
-  let alone to apply.
-- The new probes in `supabase/tests/rls_test.sql` section 24 have never been run,
-  so their expected counts are reasoned, not observed.
-- The expectation numbers in `supabase/verify.sql` were derived by counting
-  every `create policy` across the migration files (20 tables, 109 policies),
-  not by querying `pg_policies`.
+**Applied.** `supabase db push` had refused with *"Remote migration versions not
+found in local migrations directory"* — the remote history held the eleven
+existing migrations under the version IDs they were first applied with
+(`20260915231928`…), which no longer matched the filenames after those were
+renamed to the `20260101000000` sequence. Nothing was missing from the schema:
+all 19 tables and 23 views created by those eleven were present, `anon` was
+denied everywhere, and the security advisors reported no `rls_disabled_in_public`
+and no `security_definer_view`. The fix was bookkeeping only — the eleven orphan
+version IDs were reverted and the eleven local versions marked applied, after
+which `db push` applied exactly the two new migrations. **The `migration repair
+--status reverted` line the CLI itself printed would have been the harmful
+choice**: it marks the eleven as not-applied, and the next push would have tried
+to re-create tables that already exist.
 
-The redeclared finance views were checked the one way available without a
-database: each of the four bodies in `20260101000950_staff_portals.sql` was
-diffed against its original in `20260101000400_analytics_fees.sql` and is
-identical except for the role gate. That matters because `create or replace
-view` would *not* error on a changed body — it only refuses changes to column
-names, types or order — so a careless edit there would have changed the numbers
-silently.
+**`supabase/tests/rls_test.sql`: 231 probes, 231 passed, 0 failed.**
 
-First real check, in order: apply the two migrations, run `supabase/verify.sql`
-(expect zero rows from checks 1, 3, 6, 7, 7b and 7c), then run
-`supabase/tests/rls_test.sql` and require a clean PASS report.
+That run also corrected eight probes that were failing, and the breakdown is
+worth recording because only some of it was this change's fault:
+
+- **Three were already red** before the office-staff work touched the file —
+  `v_pupil_teacher_ratio`, `v_capacity_utilisation` and
+  `v_incidents_per_hundred_by_class` each expected 2 class rows. School A gains a
+  third ("Probe class") at the cross-tenant control in section 8, and these
+  per-class roll-ups correctly return a row for it. Confirmed pre-existing by
+  running the file from commit `5e779d4` against the live database, where exactly
+  those three failed and nothing else. Expectations corrected to 3.
+- **Two were new counts of mine**: section 24 runs last, so the payment count is
+  4 (a section 18 control adds one) and the class count is 3, not the section 11
+  fixture numbers.
+- **Three were a real bug in probes I wrote.** They asserted a denial by catching
+  an exception, but an RLS refusal takes two forms and only one is loud: a
+  `WITH CHECK` rejection raises, while *no `USING` policy matching at all* —
+  which is the case for a role holding no write policy on the table — quietly
+  matches zero rows. So the probe recorded "1, succeeded!" for a write that did
+  nothing, which reads as a security hole rather than a test bug. They now assert
+  `row_count = 0` via `get diagnostics`. The pre-existing escalation probes in
+  section 10 do not need this, because `profiles_update_self` *does* match the
+  caller's own row, so their denial comes back as an error.
+
+**`supabase/verify.sql`:** six of the seven zero-row checks are clean — RLS
+enabled on every table, `anon` holding no privileges, no `SECURITY DEFINER`
+function, every function pinning `search_path`, every view `security_invoker`,
+and every `UPDATE` policy carrying both `USING` and `WITH CHECK`. The policy
+inventory matches the file's expectation exactly: **20 tables, 109 policies**,
+including `notices` 4 and `subjects` 5, which confirms the two least-privilege
+tightenings are what actually landed.
+
+Check **7c fails with 2 rows**, both pre-existing and unrelated to this change:
+`admissions.created_by` and `incidents.recorded_by` are FK columns with no index,
+from migrations `20260101000700` and `20260101000800`. Both are
+`ON DELETE SET NULL`, so the cost is a scan of those tables when a user is
+deleted — not a correctness or security problem. Left unfixed rather than
+smuggling an unrelated schema change into this work.
+
+---
+
+## Still not verified
+
+**Neither portal has been signed into.** The `SUPABASE_SECRET_KEY` in
+`.env.local` is rejected by the Auth admin API (401) with it sent as `apikey`,
+as a Bearer token, and as both, while the publishable key works against the same
+project — so it is stale or revoked. Every path that uses the admin client is
+therefore untested end to end: `/admin/staff` (which mints the two new account
+types), `/admin/teachers/add`, `/admin/students/add`, school registration, and
+`scripts/seed.mjs`. No `accountant` or `schedule_officer` account exists yet, so
+the accountant and schedule officer pages have never rendered against real data,
+and `scripts/verify-rls.mjs` has not been run for this change.
+
+The RLS work *is* verified — section 24 forges the two roles' JWT claims
+directly, which is why it can prove their boundaries without a real account. What
+that does not cover is the application layer above it: the server actions, the
+timetable write path through the UI, and the guards in `src/lib/auth/session.ts`.
+
+**One thing worth flagging that the suites cannot check:** `db push` connected
+using CLI credentials, and the 24-hour MCP token used for the run above carries
+`projects:write database:write`. Neither is the app's runtime key, so neither
+proves the deployed environment is configured.
+
+First check once a fresh secret key is in place: run `scripts/seed.mjs --reset`
+(the seed now creates one account of each new role), then walk both portals at
+desktop and 360px.
 
 ---
 
