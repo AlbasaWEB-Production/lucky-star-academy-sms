@@ -131,7 +131,7 @@ export default async function AdmissionsAnalyticsPage() {
         sx={{
           display: "grid",
           gap: 3,
-          gridTemplateColumns: { xs: "1fr", lg: "3fr 2fr" },
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "3fr 2fr" },
           alignItems: "start",
           mb: 4,
         }}
