@@ -96,14 +96,24 @@ the `tel:` link on the contact page) starts working by itself.
 
 ### Decisions worth keeping
 
-**No stock photography.** The repository holds no usable photograph of the
-school: `classroom.png` is a generic vector illustration, `img1–4.png` are 64px
-interface icons, `lucky_star_background.png` is clip-art, and `backg.jpg` is a
-**watermarked Adobe Stock image** that must not be published. The gallery
-therefore shows the school's own banner — which is a genuine photograph of
-pupils — and an honest request for the rest. Filling it with stock images would
-tell a lie in pictures: a parent would read a stranger's classroom as their
-child's.
+**Stock photography — labelled, temporary, and must be removed.** The repository
+holds no usable photograph of the school: `classroom.png` is a generic vector
+illustration, `img1–4.png` are 64px interface icons, `lucky_star_background.png`
+is clip-art, and `backg.jpg` is a **watermarked Adobe Stock image** that must not
+be published. The one genuine asset is the school's own banner, which is a real
+photograph of pupils and carries the home page hero.
+
+The remaining image slots use stock photographs of **children who do not attend
+Lucky Star Academy**. They are there as stand-ins at the developer's explicit
+instruction, on the condition that they are labelled. Every one carries a visible
+"Stock photo" badge on the image, hidden text for screen readers, and a credit
+line — see `PhotoFrame`. `PLACEHOLDERS.md` lists all nine placements and records
+that they must be replaced before launch.
+
+The reasoning for labelling rather than removing them: a stock classroom on a
+real school's website is both a consent problem and a false claim, and the badge
+is the only thing that distinguishes a placeholder from a lie. Remove the badge
+without removing the photograph and the position is worse than either.
 
 **No invented news.** `src/content/news.ts` ships empty and the news page shows
 an empty state. Seeding it with plausible-looking announcements would be the
@@ -215,7 +225,47 @@ Both scripts encode traps that cost real time:
 
 ---
 
-## 7. Deploying
+## 7. The reference layout
+
+The site's layout comes from a reference design supplied in
+`Bright-Future-VSCode/bright-future-school/` — a complete website for a
+**different school**, "Bright Future International School". Its own README is
+honest about what it is: *"School details and statistics are illustrative and
+should be replaced with verified information… The newsletter form does not submit
+or store the entered email address."*
+
+### What was taken
+
+The **structure**: the utility bar carrying contact details and a portal link, a
+solid sticky header with a single gold call to action, a split hero with a
+"legacy" card hanging off the photograph, a band of five claims overlapping the
+hero, an about section with a photograph and fact cards, a row of five programme
+cards opening detail panels, a full-bleed numbers strip, a split admissions
+section, a five-column footer, and the `<dialog>` interaction for the cards.
+
+### What was not taken, and why
+
+| The reference | Why not |
+| --- | --- |
+| Navy `#071e3b` + gold, Libre Caslon Display + DM Sans | Another school's brand. Lucky Star's crest, banner and portal are green and gold, and `DESIGN.md` fixes that palette. The layout is kept; the identity is the school's. |
+| 25+ years, 1,500+ pupils, 120+ teachers, 100+ awards, **98% university acceptance**, 20+ countries, 15:1 ratio, 30+ clubs | Fabricated. Lucky Star was founded in 2014 and teaches Primary 1–6, so "university acceptance" has no meaning. The slots are kept; the values are placeholders. |
+| Early Years (3–5), Primary (1–5), Middle (6–8), High (9–12) | Programmes the school does not have. The five cards are instead the two stages of primary school plus the three questions parents actually ask — derived from `academics` so the row and the Academics page cannot disagree. |
+| "123 Education Lane, Knowledge City", `+1 (555) 123-4567`, `info@brightfuture.edu` | US template placeholders, and 555 is the prefix reserved for fiction. |
+| Stock photographs of other children | Kept as labelled stand-ins only — see § 3. |
+| A newsletter field that submits nowhere | Replaced with a statement of what is missing. This is the same call `DESIGN.md` made when it removed the signed-in shell's unwired search box. |
+| Scroll-spy navigation | The reference is a one-page site; this one has seven pages, so the active link follows the route instead. |
+
+### The consequence
+
+The home page's numbers strip and fact cards **look unfinished on purpose**.
+Five "To be confirmed" values in a dark band is not a design anyone would choose
+for a finished site — it is what remains when the alternative is publishing
+another school's statistics as this one's. Filling them in is the school's work,
+and until then the band is a visible to-do list rather than a plausible lie.
+
+---
+
+## 8. Deploying
 
 1. Register the domain. `.edu.gh` is restricted to Ghanaian educational
    institutions, needs supporting documents, and takes about two weeks —

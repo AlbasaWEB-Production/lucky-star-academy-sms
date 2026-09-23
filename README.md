@@ -67,14 +67,20 @@ Admissions, News, Gallery and Contact, plus a not-found page.
   `PLACEHOLDERS.md` lists them all as a handover checklist.
 - **The design reuses the existing system** — the same type pairing, palette,
   radius scale and crest as the management system, per `DESIGN.md` and
-  `PAGE-CONVENTIONS.md`.
+  `PAGE-CONVENTIONS.md`. The **page layout** comes from a reference design
+  supplied for the purpose; `SITE.md` § 7 records what was taken from it and what
+  could not be.
+- **The photographs are labelled stock stand-ins.** The reference is illustrated
+  with pictures of children who do not attend this school. They are in place so
+  the finished layout can be reviewed, and every one carries a visible "Stock
+  photo" badge. They must be replaced before launch — see `PLACEHOLDERS.md`.
 - **The portal is excluded from search engines** by both `robots.txt` and
   `noindex` metadata, so a parent searching the school's name never lands on a
   staff sign-in page.
 
 The host split is driven by two environment variables that are deliberately
 unset outside production, so local development and every preview deployment
-behave as a single hostname. See `SITE.md` § 7 for the deployment steps.
+behave as a single hostname. See `SITE.md` § 8 for the deployment steps.
 
 ## Features
 

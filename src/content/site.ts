@@ -123,6 +123,155 @@ export const highlights: readonly { title: string; body: string }[] = [
  * school is.
  */
 
+/* -------------------------------------------------------------------------- */
+/*  The bands, taken from the reference layout                                */
+/* -------------------------------------------------------------------------- */
+/*
+ * The reference design (see SITE.md § 7) carries a strip of five short claims,
+ * a strip of five numbers, three fact cards and a "legacy" card on the hero.
+ * Every one of its values describes a different school — a K-12 international
+ * school founded in 1998 with 1,500 pupils and 98% university acceptance. None
+ * of that is true of Lucky Star, so the *slots* are kept and the *values* are
+ * either the school's own facts or an explicit pending marker.
+ *
+ * The one deliberate departure from the reference: its numbers are illustrative,
+ * and illustrative numbers on a real school's website are indistinguishable from
+ * true ones. These read "To be confirmed" instead, which is also the client's
+ * to-do list.
+ */
+
+/**
+ * The school's values.
+ *
+ * Declared above the band that uses it because the band is on the home page and
+ * the same words appear again in the About page's values section further down
+ * this file. One copy, referenced twice — the alternative is two lists that can
+ * disagree about what the school stands for, and the About page's copy would be
+ * the one nobody remembered to update.
+ */
+const SCHOOL_VALUES = pending(
+  "Three to five values the school wants to be known for, with a line on each",
+);
+
+/** The five short claims in the band that overlaps the hero. */
+export const valueBand: readonly { title: string; body: Detail }[] = [
+  {
+    title: `Primary 1 to 6`,
+    body: fact("The whole primary course, under one roof."),
+  },
+  {
+    title: "Two campuses",
+    body: fact(`${school.campuses.join(" and ")}, in ${school.town}.`),
+  },
+  {
+    title: `Since ${school.founded}`,
+    body: fact(`Teaching to one motto: ${school.motto.toLowerCase()}.`),
+  },
+  {
+    title: "Records kept",
+    body: fact("Attendance and marks recorded for every pupil, every term."),
+  },
+  {
+    title: "Our values",
+    body: SCHOOL_VALUES,
+  },
+];
+
+/** Stable keys, so the component can pair a figure with its icon. */
+export type StatKey = "years" | "pupils" | "teachers" | "awards" | "progress";
+
+/**
+ * The numbers strip.
+ *
+ * Every value is pending. The reference's fifth figure is "98% university
+ * acceptance", which is not a thing a primary school has; its honest analogue
+ * here is how many Primary 6 pupils go on to junior high school, and by what
+ * measure.
+ */
+export const statsBand: readonly { key: StatKey; label: string; value: Detail }[] = [
+  {
+    key: "years",
+    label: "Years of teaching",
+    value: pending(
+      "How many years the school has been running. It is derivable from the founding year (2014) if the school would rather not state a number",
+    ),
+  },
+  {
+    key: "pupils",
+    label: "Pupils enrolled",
+    value: pending("The number of pupils currently enrolled, across both campuses"),
+  },
+  {
+    key: "teachers",
+    label: "Teachers",
+    value: pending("The number of teaching staff"),
+  },
+  {
+    key: "awards",
+    label: "Awards won",
+    value: pending("Any awards, competitions or recognitions the school wants to publish"),
+  },
+  {
+    key: "progress",
+    label: "On to junior high",
+    value: pending(
+      "How many Primary 6 pupils progress to junior high school, and the measure the school uses",
+    ),
+  },
+];
+
+export type FactKey = "ratio" | "clubs" | "campuses";
+
+/** The three cards beside the About photograph. */
+export const factCards: readonly { key: FactKey; label: string; value: Detail }[] = [
+  {
+    key: "ratio",
+    label: "Pupils per teacher",
+    value: pending("The school's pupil-to-teacher ratio"),
+  },
+  {
+    key: "clubs",
+    label: "Clubs and activities",
+    value: pending("The clubs, sports and activities the school actually runs"),
+  },
+  {
+    key: "campuses",
+    label: "Campuses in Yendi",
+    value: fact("Two"),
+  },
+];
+
+/** The three figures beside the About copy — all of them stated facts. */
+export const aboutMiniStats: readonly { value: string; label: string }[] = [
+  { value: school.founded, label: "Established" },
+  { value: school.levels, label: "Classes taught" },
+  { value: String(school.campuses.length), label: "Campuses in Yendi" },
+];
+
+/** The card that hangs off the hero's lower edge. */
+export const legacyCard = {
+  lead: "A legacy of",
+  emphasis: "Excellence",
+  since: `Since ${school.founded}`,
+} as const;
+
+/**
+ * The footer's newsletter column.
+ *
+ * The reference ships a subscribe field that validates the address and then
+ * says, in its own script, that nothing was submitted. That is an unwired
+ * affordance — the same thing `DESIGN.md` removed from the signed-in shell
+ * ("Unwired search. Removed, not kept") — so this column states what it is
+ * waiting for instead of collecting addresses it cannot keep.
+ */
+export const newsletter = {
+  heading: "Stay connected",
+  body: "School news and announcements, sent straight to your inbox.",
+  service: pending(
+    "A mailing list or email service. Until one exists, this column points families at the school office rather than collecting addresses",
+  ),
+} as const;
+
 export const welcome = {
   overline: "Welcome",
   heading: "A school in Yendi, built on one idea",
@@ -152,8 +301,8 @@ export const about = {
   mission: pending("The school's mission statement"),
   vision: pending("The school's vision statement"),
   values: {
-    /** Individual values are the school's to name. */
-    items: pending("Three to five values the school wants to be known for, with a line on each"),
+    /** Shared with the home page's values band — see `SCHOOL_VALUES`. */
+    items: SCHOOL_VALUES,
   },
   leadership: {
     heading: "Our leadership",
@@ -177,24 +326,31 @@ export const academics = {
   lead: `We teach ${school.levels} — the full primary course, from a child's first year to the year they leave for junior high school.`,
   stages: [
     {
+      /** Stable key, so the home page's cards can be derived from these. */
+      key: "lower-primary",
       name: "Lower Primary",
       classes: "Primary 1 – 3",
+      summary: "Where a child's first years of school are built.",
       body: pending("What the lower primary years focus on, in the school's words"),
     },
     {
+      key: "upper-primary",
       name: "Upper Primary",
       classes: "Primary 4 – 6",
+      summary: "The years that lead on to junior high school.",
       body: pending("What the upper primary years focus on, and how the leaving year is prepared"),
     },
   ],
   subjects: {
     heading: "Subjects taught",
+    summary: "The subjects taught at each level.",
     items: pending(
       "The list of subjects taught at each level, as the school names them (the school's own subjects list is the source)",
     ),
   },
   assessment: {
-    heading: "How progress is measured",
+    heading: "Progress and reports",
+    summary: "How progress is measured, and what a report card shows.",
     body: pending(
       "How the school assesses pupils — class exercises, end-of-term examinations, what appears on a report card, and how often reports are sent home",
     ),
@@ -207,11 +363,71 @@ export const academics = {
   },
   calendar: {
     heading: "Term dates",
+    summary: "The three terms of the school year.",
     items: pending("The three-term calendar for the coming academic year — each term's start and end dates"),
     /** The structure is correct for Ghanaian basic schools even before the dates are known. */
     structure: "The school year runs in three terms, in line with the Ghana Education Service calendar.",
   },
 } as const;
+
+/**
+ * The cards in the home page's programme row.
+ *
+ * **Derived from `academics`, not written again.** The row and the Academics
+ * page describe the same five things, so a change to a stage, a subject list or
+ * the assessment wording has to appear in both — and the only way to guarantee
+ * that is for there to be one copy of it. This is the same rule the repo already
+ * applies to `roleHome` (DECISIONS.md § 19) and to `SITE_NAV`.
+ *
+ * The row is the layout's, adapted: the reference design has five cards for a
+ * K-12 school's programmes. Lucky Star teaches Primary 1-6, so the five cards
+ * are the two stages of primary school plus the three questions a parent
+ * actually asks about the curriculum.
+ */
+export type ProgrammeCard = {
+  key: string;
+  title: string;
+  /** The small label along the card's foot, e.g. `Primary 1 – 3`. */
+  meta: string;
+  summary: string;
+  /** The dialog's body. */
+  detail: Detail;
+  /** Shown under a pending dialog body when there is something true to say. */
+  fallback?: string;
+};
+
+export const programmeCards: readonly ProgrammeCard[] = [
+  ...academics.stages.map((stage) => ({
+    key: stage.key,
+    title: stage.name,
+    meta: stage.classes,
+    summary: stage.summary,
+    detail: stage.body,
+  })),
+  {
+    key: "subjects",
+    title: academics.subjects.heading,
+    meta: "Curriculum",
+    summary: academics.subjects.summary,
+    detail: academics.subjects.items,
+  },
+  {
+    key: "assessment",
+    title: academics.assessment.heading,
+    meta: "Progress",
+    summary: academics.assessment.summary,
+    detail: academics.assessment.body,
+    fallback: academics.assessment.bodyFallback,
+  },
+  {
+    key: "calendar",
+    title: academics.calendar.heading,
+    meta: "Three terms",
+    summary: academics.calendar.summary,
+    detail: academics.calendar.items,
+    fallback: academics.calendar.structure,
+  },
+];
 
 /* -------------------------------------------------------------------------- */
 /*  Admissions page                                                           */

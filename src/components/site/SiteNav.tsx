@@ -17,42 +17,33 @@ import MenuIcon from "@mui/icons-material/Menu";
 
 import Link from "@/components/NextLink";
 import SchoolLogo from "@/components/ui/SchoolLogo";
+import { school } from "@/content/site";
 import { portalHref } from "@/lib/site/host";
 import { SITE_NAV } from "@/lib/site/routes";
 import { BRAND_GOLD, BRAND_GREEN_DARK, DISPLAY_FONT, INK } from "@/theme";
 
 /**
- * The public website's navigation.
+ * The site header.
  *
- * Transparent while it sits over a dark band — every public page opens with one
- * (the home page's banner hero, or the deep-green `PageHero` on the others) — and
- * a translucent blurred bar with a hairline once the page scrolls.
+ * Rebuilt on the reference layout's header: a solid, sticky white bar with the
+ * school's lockup on the left, the links, and a single gold call to action.
  *
- * The lockup is suppressed only over the home hero, because the school's own
- * banner already carries the crest and the school name as artwork, and two
- * lockups a few centimetres apart reads as a mistake. Every other page has a
- * plain green band there, so the lockup shows from the first frame.
+ * The previous version was a transparent bar over a full-bleed dark hero that
+ * faded to white on scroll and hid its own lockup while over the banner. That
+ * was clever and it caused a real bug: on a 390px phone the reserved space for
+ * the hidden lockup plus a second button in the bar pushed the menu control off
+ * the right edge, which made the document wider than the viewport and clipped
+ * every section on every page. A solid header cannot have that failure, and it
+ * is what the reference does — so the scroll listener, the colour switching and
+ * the hidden lockup are all gone rather than fixed.
  *
- * Links are rendered twice: inline from `sm` up, and in a drawer on phones. The
- * two share `SITE_NAV`, so a new page appears in both.
+ * The lockup is a two-line mark — the school's name over its location and
+ * classes — which is the reference's treatment and puts the two facts a visitor
+ * most needs into the first thing they read.
  */
 export default function SiteNav() {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const isHome = pathname === "/";
-  /** Over the banner hero the school's artwork is the lockup; elsewhere we carry it. */
-  const showLockup = scrolled || !isHome;
-  /** Text sits on a dark band until the bar turns white. */
-  const onDark = !scrolled;
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 28);
-    onScroll(); // in case the page is restored mid-scroll
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   // A route change should never leave the drawer open behind the new page.
   useEffect(() => {
@@ -63,38 +54,38 @@ export default function SiteNav() {
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   const linkSx = (href: string) => ({
-    fontWeight: 600,
-    fontSize: "0.9375rem",
+    position: "relative",
+    fontWeight: 650,
+    fontSize: "0.875rem",
     textDecoration: "none",
     whiteSpace: "nowrap" as const,
-    px: 1.25,
-    py: 0.75,
-    borderRadius: 999,
-    color: isActive(href) ? (onDark ? BRAND_GOLD : BRAND_GREEN_DARK) : onDark ? "#FFFFFF" : INK,
-    backgroundColor: "transparent",
-    "&:hover": { backgroundColor: onDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.05)" },
-    "&:focus-visible": {
-      outline: "3px solid",
-      outlineColor: onDark ? BRAND_GOLD : BRAND_GREEN_DARK,
-      outlineOffset: 2,
+    color: isActive(href) ? BRAND_GREEN_DARK : INK,
+    py: 1,
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      left: 0,
+      right: isActive(href) ? 0 : "100%",
+      bottom: 4,
+      height: 2,
+      backgroundColor: BRAND_GOLD,
+      transition: "right 200ms ease",
     },
+    "&:hover::after": { right: 0 },
+    "&:focus-visible": { outline: `2px solid ${BRAND_GREEN_DARK}`, outlineOffset: 3 },
   });
 
   return (
     <Box
       component="header"
       sx={{
-        position: "fixed",
+        position: "sticky",
         top: 0,
-        left: 0,
-        right: 0,
         zIndex: (t) => t.zIndex.appBar,
-        transition:
-          "background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease",
-        backgroundColor: scrolled ? "rgba(255, 255, 255, 0.86)" : "transparent",
-        backdropFilter: scrolled ? "blur(12px)" : "none",
+        backgroundColor: "rgba(255, 255, 255, 0.97)",
+        backdropFilter: "blur(10px)",
         borderBottom: "1px solid",
-        borderColor: scrolled ? "divider" : "transparent",
+        borderColor: "divider",
       }}
     >
       <Container
@@ -102,137 +93,128 @@ export default function SiteNav() {
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 2,
-          py: scrolled ? 1 : 1.5,
-          transition: "padding 240ms ease",
+          gap: { xs: 1.5, md: 4 },
+          minHeight: { xs: 72, md: 92 },
         }}
       >
+        {/* Lockup */}
         <Box
           component={Link}
           href="/"
-          aria-label="Lucky Star Academy — home"
+          aria-label={`${school.name} — home`}
           sx={{
-            // On md and up the lockup keeps its space while hidden, so the bar
-            // does not shift when it fades in over the home hero. On phones
-            // that reserved width is what pushed the menu button off the right
-            // edge — and a document wider than the viewport clips *every*
-            // section on the page, not just the header — so below md it is
-            // removed from the layout instead of merely hidden.
-            display: { xs: showLockup ? "flex" : "none", md: "flex" },
-            visibility: { md: showLockup ? "visible" : "hidden" },
-            opacity: { xs: 1, md: showLockup ? 1 : 0 },
+            display: "flex",
             alignItems: "center",
             gap: 1.25,
-            minWidth: 0,
             textDecoration: "none",
-            transition: "opacity 240ms ease",
+            minWidth: 0,
+            flexShrink: 0,
           }}
         >
-          <SchoolLogo decorative sizes="40px" sx={{ height: 34, flexShrink: 0 }} />
-          <Typography
-            sx={{
-              fontFamily: DISPLAY_FONT,
-              fontWeight: 600,
-              fontSize: "1.0625rem",
-              letterSpacing: "-0.01em",
-              color: onDark ? "#FFFFFF" : BRAND_GREEN_DARK,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            Lucky Star Academy
-          </Typography>
-        </Box>
-
-        {/* Inline links — tablet and up. */}
-        <Box
-          sx={{
-            display: { xs: "none", md: "flex" },
-            alignItems: "center",
-            gap: 0.5,
-            ml: "auto",
-          }}
-        >
-          <Box component="nav" aria-label="Main">
-            <Stack direction="row" sx={{ alignItems: "center", gap: 0.25 }}>
-              {SITE_NAV.filter((item) => item.href !== "/").map((item) => (
-                <Box
-                  key={item.href}
-                  component={Link}
-                  href={item.href}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  sx={linkSx(item.href)}
-                >
-                  {item.label}
-                </Box>
-              ))}
-            </Stack>
+          <SchoolLogo decorative sizes="48px" sx={{ height: { xs: 38, md: 46 }, flexShrink: 0 }} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontFamily: DISPLAY_FONT,
+                fontWeight: 600,
+                fontSize: { xs: "1rem", md: "1.1875rem" },
+                letterSpacing: "-0.01em",
+                lineHeight: 1.1,
+                color: BRAND_GREEN_DARK,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Lucky Star Academy
+            </Typography>
+            <Typography
+              sx={{
+                display: { xs: "none", sm: "block" },
+                fontSize: "0.625rem",
+                fontWeight: 700,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "text.secondary",
+                mt: 0.5,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {school.town} &middot; {school.levels}
+            </Typography>
           </Box>
-
-          <Button
-            component={Link}
-            href={portalHref("/login")}
-            variant="contained"
-            sx={{
-              ml: 1.5,
-              backgroundColor: BRAND_GOLD,
-              color: BRAND_GREEN_DARK,
-              "&:hover": { backgroundColor: "#E0A800" },
-            }}
-          >
-            Portal login
-          </Button>
         </Box>
 
-        {/* Phone: one control only. "Portal login" lives in the drawer, which
-            is where a phone user is already heading — keeping a second button
-            in the bar as well was what tipped the row into horizontal
-            overflow at 390px. */}
-        <Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", ml: "auto" }}>
-          <IconButton
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            sx={{
-              color: onDark ? "#FFFFFF" : INK,
-              border: "1px solid",
-              borderColor: onDark ? "rgba(255,255,255,0.4)" : "divider",
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
+        {/* Links, tablet and up */}
+        <Box
+          component="nav"
+          aria-label="Main"
+          sx={{ display: { xs: "none", md: "block" }, ml: "auto" }}
+        >
+          <Stack direction="row" sx={{ alignItems: "center", gap: 3 }}>
+            {SITE_NAV.filter((item) => item.href !== "/").map((item) => (
+              <Box
+                key={item.href}
+                component={Link}
+                href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                sx={linkSx(item.href)}
+              >
+                {item.label}
+              </Box>
+            ))}
+          </Stack>
         </Box>
+
+        <Button
+          component={Link}
+          href="/admissions"
+          variant="contained"
+          sx={{
+            display: { xs: "none", md: "inline-flex" },
+            ml: 3,
+            backgroundColor: BRAND_GOLD,
+            color: BRAND_GREEN_DARK,
+            "&:hover": { backgroundColor: "#E0A800" },
+          }}
+        >
+          Apply now
+        </Button>
+
+        {/* Phone: one control. The drawer carries everything, including the
+            apply button and the portal link, so the bar never has to fit them. */}
+        <IconButton
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          sx={{
+            display: { xs: "inline-flex", md: "none" },
+            ml: "auto",
+            color: INK,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
       </Container>
 
       <Drawer
         anchor="right"
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        slotProps={{ paper: { sx: { width: { xs: "82vw", sm: 340 }, p: 2 } } }}
+        slotProps={{ paper: { sx: { width: { xs: "84vw", sm: 340 }, p: 2 } } }}
       >
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-          <Typography
-            sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, color: BRAND_GREEN_DARK }}
-          >
+          <Typography sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, color: BRAND_GREEN_DARK }}>
             Menu
           </Typography>
-          <IconButton
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close menu"
-            sx={{ ml: "auto" }}
-          >
+          <IconButton onClick={() => setMenuOpen(false)} aria-label="Close menu" sx={{ ml: "auto" }}>
             <CloseIcon />
           </IconButton>
         </Box>
 
         <Divider sx={{ mb: 1 }} />
 
-        <Box
-          component="nav"
-          aria-label="Main"
-          sx={{ display: "flex", flexDirection: "column" }}
-        >
+        <Box component="nav" aria-label="Main" sx={{ display: "flex", flexDirection: "column" }}>
           {SITE_NAV.map((item) => (
             <Box
               key={item.href}
@@ -258,16 +240,33 @@ export default function SiteNav() {
 
         <Divider sx={{ my: 2 }} />
 
-        <Button
-          component={Link}
-          href={portalHref("/login")}
-          variant="contained"
-          fullWidth
-          onClick={() => setMenuOpen(false)}
-          sx={{ backgroundColor: BRAND_GOLD, color: BRAND_GREEN_DARK, "&:hover": { backgroundColor: "#E0A800" } }}
-        >
-          Portal login
-        </Button>
+        <Stack sx={{ gap: 1.5 }}>
+          <Button
+            component={Link}
+            href="/admissions"
+            variant="contained"
+            fullWidth
+            onClick={() => setMenuOpen(false)}
+            sx={{
+              backgroundColor: BRAND_GOLD,
+              color: BRAND_GREEN_DARK,
+              "&:hover": { backgroundColor: "#E0A800" },
+            }}
+          >
+            Apply now
+          </Button>
+
+          <Button
+            component={Link}
+            href={portalHref("/login")}
+            variant="outlined"
+            fullWidth
+            onClick={() => setMenuOpen(false)}
+            sx={{ color: BRAND_GREEN_DARK, borderColor: "divider" }}
+          >
+            Portal login
+          </Button>
+        </Stack>
       </Drawer>
     </Box>
   );

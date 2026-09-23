@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteNav from "@/components/site/SiteNav";
+import UtilityBar from "@/components/site/UtilityBar";
 import { school } from "@/content/site";
 import { SITE_ORIGIN } from "@/lib/site/host";
 import { SHARE_IMAGE } from "@/lib/site/metadata";
@@ -126,6 +127,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       >
         Skip to content
       </Box>
+
+      <UtilityBar />
 
       <SiteNav />
 

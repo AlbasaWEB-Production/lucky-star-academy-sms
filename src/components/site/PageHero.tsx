@@ -5,11 +5,9 @@ import { BRAND_GOLD, HERO_GREEN, ON_GREEN } from "@/theme";
 /**
  * The opening band on every public page except the home page.
  *
- * It exists so that the fixed navigation always has a dark ground under it —
- * that is what lets the nav be transparent at the top of every page and turn
- * into a white bar on scroll, rather than needing a per-page special case.
- *
- * `pt` clears the fixed header by a comfortable margin at every width.
+ * The header is sticky rather than fixed, so this band already begins below it
+ * and needs no clearance padding of its own — it just needs enough room above
+ * the title to breathe.
  */
 export default function PageHero({
   overline,
@@ -27,7 +25,7 @@ export default function PageHero({
       sx={{
         position: "relative",
         backgroundColor: HERO_GREEN,
-        pt: { xs: 13, sm: 15, md: 18 },
+        pt: { xs: 7, sm: 8, md: 10 },
         pb: { xs: 7, sm: 8, md: 10 },
       }}
     >
