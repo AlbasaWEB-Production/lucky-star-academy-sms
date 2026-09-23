@@ -4,6 +4,7 @@ import ProfileNameForm from "@/components/account/ProfileNameForm";
 import PageHeader from "@/components/ui/PageHeader";
 import TableShell from "@/components/ui/TableShell";
 import { loadShellContext } from "@/lib/auth/shell-context";
+import { roleLabel } from "@/lib/auth/roles";
 import { summariseTimetableCoverage } from "@/lib/data/timetable";
 
 export const metadata = {
@@ -25,7 +26,7 @@ export const metadata = {
  * and how much of each is placed.
  */
 export default async function ScheduleProfilePage() {
-  const { fullName, email, schoolName } = await loadShellContext("schedule_officer");
+  const { session, fullName, email, schoolName } = await loadShellContext("schedule_officer");
   const coverage = await summariseTimetableCoverage();
 
   return (
@@ -64,7 +65,7 @@ export default async function ScheduleProfilePage() {
 
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Role: Schedule officer
+              Role: {roleLabel[session.role]}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               School: {schoolName}

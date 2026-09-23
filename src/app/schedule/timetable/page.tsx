@@ -50,7 +50,28 @@ export default async function TimetablePage({
 
   const wholeSchool = classParam === ALL_CLASSES;
   const requested = classes.find((classroom) => classroom.id === classParam)?.id;
-  const selectedClassId = wholeSchool ? "" : (requested ?? classes[0]?.id ?? "");
+
+  // Which class the page opens on. Not simply `classes[0]`: that is the first
+  // name alphabetically, and on a school with a nursery it is "KG 1" - a class
+  // that holds no subjects at all. The officer's main screen would then open
+  // with an empty subject list and nothing to place, which reads as a broken
+  // page rather than an empty one. Prefer a class that still has something to
+  // place, then any class holding subjects, and only then fall back to the
+  // first class so a school with no subjects yet still gets a page.
+  const placedAnywhere = new Set(slots.map((slot) => slot.subjectId));
+  const classesWithSubjects = classes.filter((classroom) =>
+    subjectList.some((subject) => subject.classId === classroom.id),
+  );
+  const defaultClass =
+    classesWithSubjects.find((classroom) =>
+      subjectList.some(
+        (subject) => subject.classId === classroom.id && !placedAnywhere.has(subject.id),
+      ),
+    ) ?? classesWithSubjects[0];
+
+  const selectedClassId = wholeSchool
+    ? ""
+    : (requested ?? defaultClass?.id ?? classes[0]?.id ?? "");
   const selectedClass = classes.find((classroom) => classroom.id === selectedClassId) ?? null;
 
   const visibleSlots = selectedClassId
