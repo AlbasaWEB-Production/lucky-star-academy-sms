@@ -303,23 +303,7 @@ export default function DataTable({
           </TableHead>
 
           <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} sx={{ py: 6, textAlign: "center" }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {emptyMessage}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : visible.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} sx={{ py: 6, textAlign: "center" }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {noMatchMessage}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
+            {rows.length === 0 || visible.length === 0 ? null : (
               visible.map((row, rowIndex) => (
                 <TableRow key={rowIndex} hover>
                   {columns.map((column) => (
@@ -341,6 +325,26 @@ export default function DataTable({
             )}
           </TableBody>
         </Table>
+
+        {/*
+          Rendered outside the table rather than in a `colSpan` cell, for the
+          same reason as TableShell: a cell spans the table's 640px min-width,
+          so on a phone the message is centred across 640px inside a 360px
+          viewport and has to be swiped to be read. Here it is sized by the
+          scroll container's visible width. The headers are `nowrap`, so this
+          table cannot shrink to fit a phone the way TableShell's can - which is
+          exactly why the message had to leave the table.
+
+          Only reached when there are no rows at all, or a filter matched none,
+          so a populated table is unaffected.
+        */}
+        {rows.length === 0 || visible.length === 0 ? (
+          <Box sx={{ py: 6, px: 3, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              {rows.length === 0 ? emptyMessage : noMatchMessage}
+            </Typography>
+          </Box>
+        ) : null}
 
         {sorted.length > 0 ? (
           <TablePagination

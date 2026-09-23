@@ -99,19 +99,30 @@ export default function TableShell({
         </TableHead>
 
         <TableBody>
-          {isEmpty ? (
-            <TableRow>
-              <TableCell colSpan={headers.length} sx={{ py: 6, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  {emptyMessage}
-                </Typography>
-              </TableCell>
-            </TableRow>
-          ) : (
-            children
-          )}
+          {isEmpty ? null : children}
         </TableBody>
       </Table>
+
+      {/*
+        The empty message sits OUTSIDE the table, not in a `colSpan` cell.
+
+        A `colSpan` cell inherits the table's 640px min-width, so on a phone the
+        message is centred across 640px inside a 360px viewport: the reader sees
+        its left edge and has to swipe to finish the sentence - on the one
+        screen whose entire content is that sentence. As a sibling of the table
+        it is sized by the scroll container's visible width instead, so it wraps
+        and reads in full.
+
+        This is the only branch a table with rows never reaches, so the change
+        cannot affect a populated table.
+      */}
+      {isEmpty ? (
+        <Box sx={{ py: 6, px: 3, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            {emptyMessage}
+          </Typography>
+        </Box>
+      ) : null}
     </TableContainer>
   );
 }
