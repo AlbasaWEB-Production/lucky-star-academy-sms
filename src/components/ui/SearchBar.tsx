@@ -18,6 +18,10 @@ const DEBOUNCE_MS = 350;
  * clears back to the bare path when the field is emptied. It never re-syncs
  * from `initialQuery`, because its own navigation is the only thing that moves
  * it.
+ *
+ * Any other query parameter on the page is preserved. A page with a second
+ * filter (a term picker, say) keeps it while the search changes, so the two
+ * cannot silently disagree.
  */
 export default function SearchBar({
   placeholder,
@@ -49,9 +53,29 @@ export default function SearchBar({
     const trimmed = next.trim();
     if (trimmed === lastSent.current) return;
     lastSent.current = trimmed;
-    router.replace(trimmed ? `${pathname}?q=${encodeURIComponent(trimmed)}` : pathname, {
-      scroll: false,
-    });
+
+    // Merge into the existing query string rather than replacing it. A page may
+    // carry a second filter beside the search - the accountant's fee list has
+    // `?term=` - and rebuilding from scratch would silently reset it. On a
+    // ledger that reads as "this term has no debtors" rather than "your term
+    // was dropped", which is the kind of wrong-but-plausible number the rest of
+    // this codebase goes out of its way to avoid.
+    //
+    // The URL is read from `window.location` inside the handler rather than
+    // through `useSearchParams()`. The hook is read during render, so it would
+    // force every page that mounts this box into a `<Suspense>` boundary (see
+    // "Next.js 16 gotchas" in PAGE-CONVENTIONS.md); a handler only runs in the
+    // browser, where the live URL is already available.
+    const params = new URLSearchParams(window.location.search);
+
+    if (trimmed) {
+      params.set("q", trimmed);
+    } else {
+      params.delete("q");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
