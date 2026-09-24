@@ -149,7 +149,7 @@ export default function SiteNav() {
           aria-label="Main"
           sx={{ display: { xs: "none", md: "block" }, ml: "auto" }}
         >
-          <Stack direction="row" sx={{ alignItems: "center", gap: 3 }}>
+          <Stack direction="row" sx={{ alignItems: "center", gap: { md: 1.5, lg: 2.5 } }}>
             {SITE_NAV.filter((item) => item.href !== "/").map((item) => (
               <Box
                 key={item.href}
@@ -164,13 +164,17 @@ export default function SiteNav() {
           </Stack>
         </Box>
 
+        {/* The gap tightens at `md` and opens at `lg`. Eight items plus the call
+            to action is wider than the reference's six, and the desktop nav
+            first appears at exactly 900px — the narrowest it ever has to fit. */}
         <Button
           component={Link}
           href="/admissions"
           variant="contained"
           sx={{
             display: { xs: "none", md: "inline-flex" },
-            ml: 3,
+            ml: { md: 2, lg: 3 },
+            px: { md: 2, lg: 2.5 },
             backgroundColor: BRAND_GOLD,
             color: BRAND_GREEN_DARK,
             "&:hover": { backgroundColor: "#E0A800" },

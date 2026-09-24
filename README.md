@@ -58,9 +58,13 @@ PLACEHOLDERS.md         the school content the website is still waiting for
 
 ## The public website
 
-Seven pages, all prerendered as static content: Home, About, Academics,
-Admissions, News, Gallery and Contact, plus a not-found page.
+Eight pages, all prerendered as static content: Home, About, Academics,
+Admissions, Staff, News, Gallery and Contact, plus a not-found page.
 
+- **The school teaches four programmes.** Preschool (creche, nursery,
+  kindergarten), Primary (Basic 1–6), Islamic Studies (Quran, Hadith, Fiqh, Luga,
+  Tawheed, Seerah) and Digital Studies (computing, coding, robotics, AI). All
+  four, and every class and subject inside them, are the school's own content.
 - **Content is in one place.** `src/content/site.ts` holds every fact the site
   states. Nothing is invented: anything the school has not supplied is a
   `pending("…")` marker that renders as a visible "To be confirmed", and

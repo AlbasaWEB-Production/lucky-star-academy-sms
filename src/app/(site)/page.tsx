@@ -13,7 +13,7 @@ import StatsBand from "@/components/site/StatsBand";
 import ValuesBand from "@/components/site/ValuesBand";
 import { PendingBlock } from "@/components/site/DetailText";
 import Link from "@/components/NextLink";
-import { academics, aboutMiniStats, admissions, factCards, school, welcome } from "@/content/site";
+import { academics, aboutMiniStats, admissions, factCards, META_DESCRIPTION, school, welcome } from "@/content/site";
 import { JsonLd, schoolJsonLd } from "@/lib/site/structured-data";
 import { BRAND_GOLD, BRAND_GREEN, BRAND_GREEN_DARK, HERO_GREEN } from "@/theme";
 
@@ -52,9 +52,9 @@ import { BRAND_GOLD, BRAND_GREEN, BRAND_GREEN_DARK, HERO_GREEN } from "@/theme";
  */
 export const metadata: Metadata = {
   title: {
-    absolute: `${school.name} — ${school.levels} in ${school.town}, Ghana`,
+    absolute: `${school.name} — preschool and primary school in ${school.town}, Ghana`,
   },
-  description: `${school.name} is a ${school.levels} school in ${school.town}, ${school.region}, Ghana. Established ${school.founded}. ${school.motto}.`,
+  description: META_DESCRIPTION,
 };
 
 const FACT_ICONS = {

@@ -5,21 +5,27 @@
  * rather than copy scattered through the pages:
  *
  *  1. **Nothing is invented.** Every value below is either a fact the school
- *     has already stated (its name, Yendi, Primary 1–6, the two campuses, the
- *     founding year and the motto — all of which appear on the school's own
- *     banner), or it is an explicit `pending(...)` marker naming what is still
- *     needed. There are no plausible-looking placeholder phone numbers, no
- *     invented statistics and no testimonial copy — a wrong-but-plausible
- *     number is worse than a visible gap, which is the failure mode this
+ *     has stated, or it is an explicit `pending(...)` marker naming what is
+ *     still needed. There are no plausible-looking placeholder phone numbers,
+ *     no invented statistics and no testimonial copy — a wrong-but-plausible
+ *     value is worse than a visible gap, which is the failure mode this
  *     codebase already writes about at length in `DECISIONS.md`.
  *
  *  2. **The gap is visible.** `pending(...)` values render as a marked
  *     placeholder on the page, so a reviewer can see exactly what is
- *     outstanding, and a premature launch shows a gap rather than a falsehood.
- *     `PLACEHOLDERS.md` is the same list in handover form.
+ *     outstanding. `PLACEHOLDERS.md` is the same list in handover form.
  *
  * To finish the site, replace `pending("…")` with `fact("…")`. Nothing else
  * needs to change.
+ *
+ * ## Where the confirmed facts came from
+ *
+ * Everything not marked `pending` was supplied by the school: the name, motto,
+ * founding year, town and region, the five values, the two campuses and their
+ * addresses, the telephone numbers and email address, the four programmes with
+ * the classes and subjects inside each, the four registrations, and the Admin
+ * and Finance Officer's name. The school's own banner supplied the motto and
+ * the founding year before that.
  */
 
 export type Detail = {
@@ -55,73 +61,108 @@ export const school = {
   /** Written as the school writes it on its banner. */
   motto: "A Difference of Excellence",
   founded: "2014",
-  levels: "Primary 1–6",
+  /**
+   * The school teaches preschool and primary. See `programmes` for the four
+   * programmes and the classes inside each.
+   */
+  levels: "Preschool to Basic 6",
   /** From `classes.campus` in the school's own data. */
   campuses: ["Nayilifong", "Kpatuya"],
 } as const;
 
+/** The two campuses, with the addresses the school gave. */
+export const campuses: readonly { name: string; address: string }[] = [
+  {
+    name: school.campuses[0],
+    address: "Adjacent Gukpegu Junction, along the Yendi–Tatale Road",
+  },
+  {
+    name: school.campuses[1],
+    address: "Behind Dagbon State SHS, Yendi",
+  },
+];
+
+/**
+ * The school's registrations, as supplied.
+ *
+ * Worth stating on the website and worth stating **accurately**: a parent
+ * checking whether a school is registered will compare these names against the
+ * bodies' own, so the acronyms are written as the bodies write them — `NaSIA`,
+ * not `NASIA`, and the `Registrar-General's Department`.
+ */
+export const registrations: readonly string[] = [
+  "Ghana Education Service (GES)",
+  "National Schools Inspectorate Authority (NaSIA)",
+  "Department of Social Welfare",
+  "Registrar-General's Department",
+];
+
 /** One line the whole site agrees on, used in metadata and the footer. */
-export const TAGLINE = `A ${school.levels} school in ${school.town}, ${school.region}, Ghana.`;
+export const TAGLINE = `A preschool and primary school in ${school.town}, ${school.region}, Ghana.`;
 
 export const INTRO =
-  "Lucky Star Academy is a Primary 1–6 school in Yendi, in the Northern Region of Ghana. Since 2014 we have taught one motto: a difference of excellence.";
+  "Lucky Star Academy is a preschool and primary school in Yendi, in the Northern Region of Ghana. " +
+  "Since 2014 we have taught one motto: a difference of excellence.";
+
+/**
+ * The one-line description used in page metadata and link previews.
+ *
+ * Held here rather than composed at each call site because `${school.levels}`
+ * reads awkwardly inside a sentence — "a Preschool to Basic 6 school" — and a
+ * search result is the last place to sound like a database.
+ */
+export const META_DESCRIPTION =
+  `${school.name} is a preschool and primary school in ${school.town}, ${school.region}, Ghana ` +
+  `— creche to Basic 6, with Islamic Studies and Digital Studies alongside the school curriculum. ` +
+  `Established ${school.founded}.`;
 
 /* -------------------------------------------------------------------------- */
 /*  Contact                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export const contact = {
-  addressLine1: pending("The school's street address, or its Ghana Post GPS digital address"),
-  town: school.town,
-  region: school.region,
-  country: school.country,
-  phone: pending("The school office phone number, in the form families should dial"),
-  phoneAlt: pending("A second phone number for the office, if there is one"),
-  email: pending("The school's email address, once the domain is registered"),
-  officeHours: pending("Office opening hours, and the days the office is closed"),
-  /** Confirmed by nothing yet — kept out of the rendered page until it is. */
-  postalAddress: pending("A postal address, if the school uses one for correspondence"),
-} as const;
-
 /**
- * Pre-filled WhatsApp / mail links must never point at a placeholder, so the
- * pages check these before rendering a `tel:` or `mailto:` link.
+ * Pre-filled WhatsApp / mail links must never point at a placeholder, so every
+ * `tel:` and `mailto:` on the site is gated on `isKnown()`. That is what makes
+ * the utility bar and the footer grow working links by themselves.
  */
 export function isKnown(detail: Detail): boolean {
   return !detail.pending;
 }
 
+export const contact = {
+  phone: fact("024 042 3100"),
+  phoneAlt: fact("054 764 6286"),
+  email: fact("school.luckystar@gmail.com"),
+  town: school.town,
+  region: school.region,
+  country: school.country,
+  officeHours: pending("Office opening hours, and the days the office is closed"),
+  postalAddress: pending("A postal address, if the school uses one for correspondence"),
+} as const;
+
 /* -------------------------------------------------------------------------- */
-/*  Home page                                                                 */
+/*  What the school stands for                                                */
 /* -------------------------------------------------------------------------- */
 
-/** The four things we can state as fact on the home page. */
-export const highlights: readonly { title: string; body: string }[] = [
-  {
-    title: "Primary 1 to 6",
-    body: "Six year groups under one school, from Primary 1 through to the Primary 6 leaving class.",
-  },
-  {
-    title: "Two campuses",
-    body: `Our classes sit across two campuses in ${school.town} — ${school.campuses.join(" and ")}.`,
-  },
-  {
-    title: `Since ${school.founded}`,
-    body: `The school was established in ${school.founded} and still teaches to one motto: ${school.motto.toLowerCase()}.`,
-  },
-  {
-    title: "Records kept for every pupil",
-    body: "Attendance and examination marks are recorded class by class, term by term, so a child's progress can be followed rather than guessed at.",
-  },
+/** The five values, as the school names them. */
+export const values: readonly string[] = [
+  "Discipline",
+  "Faith",
+  "Excellence",
+  "Knowledge",
+  "Love",
 ];
 
-/**
- * Deliberately not a "why parents choose us" list.
- *
- * We have no survey, no results table and no testimonials, so any such heading
- * would be a claim the school cannot stand behind. These describe what the
- * school is.
- */
+/** The paragraph the school will write about itself. */
+export const welcome = {
+  overline: "Welcome",
+  heading: "A school in Yendi, built on one idea",
+  body: pending(
+    "Two or three paragraphs in the school's own words: why it was founded, who it serves, and what it is trying to do for its pupils",
+  ),
+  /** Safe, factual fallback shown until the paragraph above arrives. */
+  bodyFallback: INTRO,
+} as const;
 
 /* -------------------------------------------------------------------------- */
 /*  The bands, taken from the reference layout                                */
@@ -130,50 +171,34 @@ export const highlights: readonly { title: string; body: string }[] = [
  * The reference design (see SITE.md § 7) carries a strip of five short claims,
  * a strip of five numbers, three fact cards and a "legacy" card on the hero.
  * Every one of its values describes a different school — a K-12 international
- * school founded in 1998 with 1,500 pupils and 98% university acceptance. None
- * of that is true of Lucky Star, so the *slots* are kept and the *values* are
- * either the school's own facts or an explicit pending marker.
+ * school founded in 1998 with 1,500 pupils and 98% university acceptance.
  *
- * The one deliberate departure from the reference: its numbers are illustrative,
- * and illustrative numbers on a real school's website are indistinguishable from
- * true ones. These read "To be confirmed" instead, which is also the client's
- * to-do list.
+ * The slots are kept and the values are Lucky Star's own. Now that the school
+ * has supplied its programmes, the values band is **entirely fact** — it no
+ * longer carries a placeholder at all.
  */
-
-/**
- * The school's values.
- *
- * Declared above the band that uses it because the band is on the home page and
- * the same words appear again in the About page's values section further down
- * this file. One copy, referenced twice — the alternative is two lists that can
- * disagree about what the school stands for, and the About page's copy would be
- * the one nobody remembered to update.
- */
-const SCHOOL_VALUES = pending(
-  "Three to five values the school wants to be known for, with a line on each",
-);
 
 /** The five short claims in the band that overlaps the hero. */
 export const valueBand: readonly { title: string; body: Detail }[] = [
   {
-    title: `Primary 1 to 6`,
-    body: fact("The whole primary course, under one roof."),
+    title: "Preschool to Basic 6",
+    body: fact("Creche, nursery and kindergarten, then Basic 1 through to Basic 6."),
   },
   {
-    title: "Two campuses",
-    body: fact(`${school.campuses.join(" and ")}, in ${school.town}.`),
+    title: "Islamic studies",
+    body: fact("Quran, Hadith, Fiqh, Luga, Tawheed and Seerah."),
   },
   {
-    title: `Since ${school.founded}`,
-    body: fact(`Teaching to one motto: ${school.motto.toLowerCase()}.`),
+    title: "Digital studies",
+    body: fact("Computing, coding, robotics and AI."),
   },
   {
-    title: "Records kept",
-    body: fact("Attendance and marks recorded for every pupil, every term."),
+    title: "Two campuses in Yendi",
+    body: fact(`${school.campuses.join(" and ")}, on either side of town.`),
   },
   {
     title: "Our values",
-    body: SCHOOL_VALUES,
+    body: fact(values.join(" · ")),
   },
 ];
 
@@ -183,10 +208,15 @@ export type StatKey = "years" | "pupils" | "teachers" | "awards" | "progress";
 /**
  * The numbers strip.
  *
- * Every value is pending. The reference's fifth figure is "98% university
- * acceptance", which is not a thing a primary school has; its honest analogue
- * here is how many Primary 6 pupils go on to junior high school, and by what
- * measure.
+ * Every value is still pending. The reference's fifth figure is "98%
+ * university acceptance", which is not a thing a primary school has; its honest
+ * analogue here is how many Basic 6 pupils go on to junior high school, and by
+ * what measure.
+ *
+ * The school supplied its programmes and its registrations but no figures, so
+ * these read "To be confirmed" rather than being guessed. The years figure is
+ * derivable from the founding year (2014) if the school would rather not state
+ * a number.
  */
 export const statsBand: readonly { key: StatKey; label: string; value: Detail }[] = [
   {
@@ -215,7 +245,7 @@ export const statsBand: readonly { key: StatKey; label: string; value: Detail }[
     key: "progress",
     label: "On to junior high",
     value: pending(
-      "How many Primary 6 pupils progress to junior high school, and the measure the school uses",
+      "How many Basic 6 pupils progress to junior high school, and the measure the school uses",
     ),
   },
 ];
@@ -244,8 +274,8 @@ export const factCards: readonly { key: FactKey; label: string; value: Detail }[
 /** The three figures beside the About copy — all of them stated facts. */
 export const aboutMiniStats: readonly { value: string; label: string }[] = [
   { value: school.founded, label: "Established" },
-  { value: school.levels, label: "Classes taught" },
-  { value: String(school.campuses.length), label: "Campuses in Yendi" },
+  { value: "Basic 1–6", label: "Primary classes" },
+  { value: "4", label: "Programmes taught" },
 ];
 
 /** The card that hangs off the hero's lower edge. */
@@ -272,16 +302,75 @@ export const newsletter = {
   ),
 } as const;
 
-export const welcome = {
-  overline: "Welcome",
-  heading: "A school in Yendi, built on one idea",
-  /** The school's own words about itself — the paragraph the client will replace. */
-  body: pending(
-    "Two or three paragraphs in the school's own words: why it was founded, who it serves, and what it is trying to do for its pupils",
-  ),
-  /** Safe, factual fallback shown until the paragraph above arrives. */
-  bodyFallback: INTRO,
-} as const;
+/* -------------------------------------------------------------------------- */
+/*  Programmes — the four things the school teaches                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The programmes, and the classes and subjects inside each.
+ *
+ * **All four are supplied.** The names, the labels and every entry in `courses`
+ * came from the school; only the descriptive paragraph (`body`) is still open.
+ * So the cards and their detail panels render real content rather than
+ * placeholders, which is what the programme row was built to show.
+ *
+ * This one array feeds the home page's card row **and** the Academics page, so
+ * the two cannot disagree — the rule the repo already applies to `SITE_NAV` and
+ * `roleHome`.
+ */
+export type Programme = {
+  key: string;
+  name: string;
+  /** The small label along the card's foot. */
+  meta: string;
+  summary: string;
+  /** The classes or subjects inside the programme. All supplied. */
+  courses: readonly string[];
+  /** The description, which the school has not written yet. */
+  body: Detail;
+  fallback?: string;
+};
+
+export const programmes: readonly Programme[] = [
+  {
+    key: "preschool",
+    name: "Preschool",
+    meta: "Creche · Nursery · Kindergarten",
+    summary: "Where a child's first years of school begin.",
+    courses: ["Creche", "Nursery", "Kindergarten"],
+    body: pending(
+      "What the preschool years focus on, and the age each class takes (creche, nursery and kindergarten)",
+    ),
+  },
+  {
+    key: "primary",
+    name: "Primary",
+    meta: "Basic 1 – 6",
+    summary: "Six years of basic education, from Basic 1 to the leaving class.",
+    courses: ["Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5", "Basic 6"],
+    body: pending(
+      "What the primary years cover, and how the Basic 6 year is prepared for junior high school",
+    ),
+  },
+  {
+    key: "islamic-studies",
+    name: "Islamic Studies",
+    meta: "Six subjects",
+    summary: "Quran and the Islamic sciences, taught alongside the school curriculum.",
+    courses: ["Quran", "Hadith", "Fiqh", "Luga", "Tawheed", "Seerah"],
+    body: pending(
+      "How Islamic Studies is taught — whether it is taken by every pupil or offered as an option, and at which levels",
+    ),
+  },
+  {
+    key: "digital-studies",
+    name: "Digital Studies",
+    meta: "Computing · Coding · Robotics · AI",
+    summary: "Computing and technology, from first steps through to robotics.",
+    courses: ["Computing", "Coding", "Robotics", "AI"],
+    body: pending("How Digital Studies is taught, and what equipment the school has for it"),
+  },
+];
 
 /* -------------------------------------------------------------------------- */
 /*  About page                                                                */
@@ -289,7 +378,7 @@ export const welcome = {
 
 export const about = {
   heading: "About our school",
-  lead: `${school.name} is a private basic school in ${school.town}, in Ghana's ${school.region}. We teach ${school.levels}.`,
+  lead: `${school.name} is a preschool and primary school in ${school.town}, in Ghana's ${school.region}. We teach ${school.levels}.`,
   story: {
     heading: "Our story",
     /** The founding year is real; everything after it is the client's to write. */
@@ -300,20 +389,53 @@ export const about = {
   },
   mission: pending("The school's mission statement"),
   vision: pending("The school's vision statement"),
-  values: {
-    /** Shared with the home page's values band — see `SCHOOL_VALUES`. */
-    items: SCHOOL_VALUES,
-  },
-  leadership: {
-    heading: "Our leadership",
-    headTeacher: pending("The head teacher's name, and their title as the school writes it"),
-    note: pending("Whether the school wants a staff page, and which staff may be listed"),
-  },
-  /** Which year groups sit at which campus — `classes.campus` holds this, but a
-   *  public page should state it from the school, not infer it from a fallback. */
-  campusClasses: pending("Which classes are held at each campus"),
-  registration: pending(
-    "The school's GES registration number and any other official registration details the school is willing to publish",
+  campusClasses: pending("Which classes and programmes are held at each campus"),
+  /** The registrations themselves are confirmed; only the numbers are open. */
+  registrationNumbers: pending(
+    "The registration or certificate numbers for the four bodies, if the school wants them published",
+  ),
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/*  Staff                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The staff page.
+ *
+ * Two entries today. The head teacher's name has not been supplied — the school
+ * marked it with an ❌ — so that card renders as a visible placeholder rather
+ * than being quietly omitted, which is what makes the page a to-do list as well
+ * as a staff list.
+ *
+ * `more` records the open question about how far the list should go: a page
+ * that names only two people invites the question of where the teachers are,
+ * and the answer may simply be that the school would rather not publish them.
+ * That is the school's call to make.
+ */
+export type StaffMember = {
+  key: string;
+  name: Detail;
+  role: string;
+};
+
+export const staff = {
+  heading: "Our staff",
+  lead: "The people who lead the school and run its office.",
+  members: [
+    {
+      key: "head-teacher",
+      name: pending("The head teacher's name, and their title as the school writes it"),
+      role: "Head Teacher",
+    },
+    {
+      key: "admin-finance",
+      name: fact("Abdulai Rahama"),
+      role: "Admin and Finance Officer",
+    },
+  ] as readonly StaffMember[],
+  more: pending(
+    "Whether teaching staff should be listed on this page too, and which of them may be named",
   ),
 } as const;
 
@@ -323,29 +445,12 @@ export const about = {
 
 export const academics = {
   heading: "Academics",
-  lead: `We teach ${school.levels} — the full primary course, from a child's first year to the year they leave for junior high school.`,
-  stages: [
-    {
-      /** Stable key, so the home page's cards can be derived from these. */
-      key: "lower-primary",
-      name: "Lower Primary",
-      classes: "Primary 1 – 3",
-      summary: "Where a child's first years of school are built.",
-      body: pending("What the lower primary years focus on, in the school's words"),
-    },
-    {
-      key: "upper-primary",
-      name: "Upper Primary",
-      classes: "Primary 4 – 6",
-      summary: "The years that lead on to junior high school.",
-      body: pending("What the upper primary years focus on, and how the leaving year is prepared"),
-    },
-  ],
+  lead: `We teach ${school.levels} — preschool and primary, with two programmes running alongside them: Islamic Studies and Digital Studies.`,
   subjects: {
     heading: "Subjects taught",
-    summary: "The subjects taught at each level.",
+    summary: "The subjects taught in the primary classes.",
     items: pending(
-      "The list of subjects taught at each level, as the school names them (the school's own subjects list is the source)",
+      "The list of subjects taught in the primary classes, as the school names them. The Islamic Studies and Digital Studies subjects are already published on this page",
     ),
   },
   assessment: {
@@ -359,75 +464,21 @@ export const academics = {
   },
   schoolDay: {
     heading: "The school day",
-    items: pending("Opening and closing times for each level, the break, and the days the school is closed"),
+    summary: "Opening and closing times.",
+    items: pending(
+      "Opening and closing times for each level, the break, and the days the school is closed",
+    ),
   },
   calendar: {
     heading: "Term dates",
     summary: "The three terms of the school year.",
-    items: pending("The three-term calendar for the coming academic year — each term's start and end dates"),
+    items: pending(
+      "The three-term calendar for the coming academic year — each term's start and end dates",
+    ),
     /** The structure is correct for Ghanaian basic schools even before the dates are known. */
     structure: "The school year runs in three terms, in line with the Ghana Education Service calendar.",
   },
 } as const;
-
-/**
- * The cards in the home page's programme row.
- *
- * **Derived from `academics`, not written again.** The row and the Academics
- * page describe the same five things, so a change to a stage, a subject list or
- * the assessment wording has to appear in both — and the only way to guarantee
- * that is for there to be one copy of it. This is the same rule the repo already
- * applies to `roleHome` (DECISIONS.md § 19) and to `SITE_NAV`.
- *
- * The row is the layout's, adapted: the reference design has five cards for a
- * K-12 school's programmes. Lucky Star teaches Primary 1-6, so the five cards
- * are the two stages of primary school plus the three questions a parent
- * actually asks about the curriculum.
- */
-export type ProgrammeCard = {
-  key: string;
-  title: string;
-  /** The small label along the card's foot, e.g. `Primary 1 – 3`. */
-  meta: string;
-  summary: string;
-  /** The dialog's body. */
-  detail: Detail;
-  /** Shown under a pending dialog body when there is something true to say. */
-  fallback?: string;
-};
-
-export const programmeCards: readonly ProgrammeCard[] = [
-  ...academics.stages.map((stage) => ({
-    key: stage.key,
-    title: stage.name,
-    meta: stage.classes,
-    summary: stage.summary,
-    detail: stage.body,
-  })),
-  {
-    key: "subjects",
-    title: academics.subjects.heading,
-    meta: "Curriculum",
-    summary: academics.subjects.summary,
-    detail: academics.subjects.items,
-  },
-  {
-    key: "assessment",
-    title: academics.assessment.heading,
-    meta: "Progress",
-    summary: academics.assessment.summary,
-    detail: academics.assessment.body,
-    fallback: academics.assessment.bodyFallback,
-  },
-  {
-    key: "calendar",
-    title: academics.calendar.heading,
-    meta: "Three terms",
-    summary: academics.calendar.summary,
-    detail: academics.calendar.items,
-    fallback: academics.calendar.structure,
-  },
-];
 
 /* -------------------------------------------------------------------------- */
 /*  Admissions page                                                           */
@@ -448,7 +499,9 @@ export const admissions = {
     },
     {
       title: "Bring the required documents",
-      body: pending("The exact documents required — birth certificate, previous school records, photographs, and so on"),
+      body: pending(
+        "The exact documents required — birth certificate, previous school records, photographs, and so on",
+      ),
     },
     {
       title: "Confirm your child's place",
@@ -470,11 +523,21 @@ export const admissions = {
   faqs: [
     {
       question: "Which classes can my child join?",
-      answer: `We admit pupils into ${school.levels}.`,
+      answer: `We admit pupils into ${school.levels} — creche, nursery and kindergarten, then Basic 1 through to Basic 6.`,
     },
     {
       question: "Where are the classes held?",
       answer: `Classes are held at our two campuses in ${school.town}: ${school.campuses.join(" and ")}. The office will tell you which campus your child's class sits at.`,
+    },
+    {
+      question: "Does the school teach Islamic Studies?",
+      answer:
+        "Yes. Islamic Studies is one of our four programmes, covering Quran, Hadith, Fiqh, Luga, Tawheed and Seerah. Please contact the office to ask how it is arranged for your child's class.",
+    },
+    {
+      question: "Is the school registered?",
+      answer:
+        "Yes. Lucky Star Academy is registered with the Ghana Education Service, the National Schools Inspectorate Authority, the Department of Social Welfare and the Registrar-General's Department.",
     },
     {
       question: "When does the school year begin?",
@@ -501,13 +564,15 @@ export const gallery = {
   heading: "Gallery",
   lead: "Photographs of school life at Lucky Star Academy.",
   /**
-   * The repo holds no usable photographs of the school. `classroom.png` is a
-   * generic vector illustration, `img1–4.png` are 64px interface icons, and
-   * `backg.jpg` is a watermarked Adobe Stock image that must not be published.
-   * Publishing stock photography as though it were the school would be a lie
-   * told in pictures, so the gallery ships as an honest empty state instead.
+   * The repo holds no photographs of the school beyond its own banner.
+   * `classroom.png` is a generic vector illustration, `img1–4.png` are 64px
+   * interface icons, and `backg.jpg` is a watermarked Adobe Stock image that
+   * must not be published. The image slots use labelled stock stand-ins —
+   * see `PLACEHOLDERS.md`.
    */
-  needs: pending("Photographs of the school: campus, classrooms, pupils at work, and school events"),
+  needs: pending(
+    "Photographs of the school: both campuses, classrooms, pupils at work, and school events",
+  ),
   consent: pending(
     "The school's position on publishing photographs in which pupils are identifiable, including written parental consent",
   ),

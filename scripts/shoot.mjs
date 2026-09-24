@@ -38,6 +38,7 @@ const PAGES = [
   ["about", "/about"],
   ["academics", "/academics"],
   ["admissions", "/admissions"],
+  ["staff", "/staff"],
   ["news", "/news"],
   ["gallery", "/gallery"],
   ["contact", "/contact"],

@@ -25,6 +25,7 @@ export const SITE_NAV: readonly SiteNavItem[] = [
   { href: "/about", label: "About" },
   { href: "/academics", label: "Academics" },
   { href: "/admissions", label: "Admissions" },
+  { href: "/staff", label: "Staff" },
   { href: "/news", label: "News" },
   { href: "/gallery", label: "Gallery" },
   { href: "/contact", label: "Contact" },

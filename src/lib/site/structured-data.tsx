@@ -1,39 +1,48 @@
-import { school, contact } from "@/content/site";
+import { campuses, contact, META_DESCRIPTION, school, staff } from "@/content/site";
 import { absoluteSiteUrl, SITE_ORIGIN } from "@/lib/site/host";
 
 /**
  * The school as structured data.
  *
  * `School` is a real schema.org type (a subtype of `EducationalOrganization`),
- * which is what lets a search engine show the school's name, location and motto
- * as an entity rather than as anonymous text.
+ * which is what lets a search engine show the school's name, location, phone
+ * number and staff as an entity rather than as anonymous text.
  *
- * **Only values the school has actually given us appear here.** There is no
- * `telephone`, no `streetAddress` and no `email`, because those are still
- * pending — and structured data is read by machines that do not see the
- * "to be confirmed" marker on the page. Emitting a placeholder phone number
- * here would publish it as fact to every crawler that reads the site, which is
- * precisely the trap `DECISIONS.md` § 2 describes.
- *
- * Adding the fields is a one-line change once the real values arrive.
+ * **Only values the school has actually given us appear here.** Structured data
+ * is read by machines that never see the "to be confirmed" marker on a page, so
+ * a placeholder emitted here would be published as fact to every crawler that
+ * reads the site — precisely the trap `DECISIONS.md` § 2 describes. The phone
+ * numbers, the email, both campus addresses and the Admin and Finance Officer
+ * are all supplied, so all of them are safe to state. The head teacher's name is
+ * not, and `employee` filters it out rather than emitting a placeholder.
  */
 export function schoolJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "School",
     name: school.name,
-    description: `A ${school.levels} school in ${school.town}, ${school.region}, Ghana. Established ${school.founded}.`,
+    description: META_DESCRIPTION,
     slogan: school.motto,
     foundingDate: school.founded,
     url: SITE_ORIGIN,
     logo: absoluteSiteUrl("/lucky_star_logo.png"),
     image: absoluteSiteUrl("/sms_background_image.png"),
-    address: {
+    address: campuses.map((campus) => ({
       "@type": "PostalAddress",
+      streetAddress: `${campus.name} Campus, ${campus.address}`,
       addressLocality: contact.town,
       addressRegion: contact.region,
       addressCountry: "GH",
-    },
+    })),
+    telephone: [contact.phone.value, contact.phoneAlt.value],
+    email: contact.email.value,
+    employee: staff.members
+      .filter((member) => !member.name.pending)
+      .map((member) => ({
+        "@type": "Person",
+        name: member.name.value,
+        jobTitle: member.role,
+      })),
   };
 }
 

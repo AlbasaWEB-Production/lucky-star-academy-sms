@@ -4,7 +4,7 @@ import { Box } from "@mui/material";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteNav from "@/components/site/SiteNav";
 import UtilityBar from "@/components/site/UtilityBar";
-import { school } from "@/content/site";
+import { META_DESCRIPTION, school } from "@/content/site";
 import { SITE_ORIGIN } from "@/lib/site/host";
 import { SHARE_IMAGE } from "@/lib/site/metadata";
 
@@ -35,9 +35,7 @@ export const metadata: Metadata = {
     template: `%s | ${school.name}`,
   },
 
-  description:
-    `${school.name} is a ${school.levels} school in ${school.town}, ${school.region}, Ghana. ` +
-    `Established ${school.founded}. ${school.motto}.`,
+  description: META_DESCRIPTION,
 
   applicationName: school.name,
 
@@ -45,9 +43,11 @@ export const metadata: Metadata = {
     school.name,
     `school in ${school.town}`,
     `primary school ${school.town}`,
-    `${school.levels} Ghana`,
-    `${school.town} ${school.region}`,
+    `preschool ${school.town}`,
+    `Islamic school ${school.town}`,
+    "creche and nursery Ghana",
     "basic school Ghana",
+    "GES registered school Yendi",
   ],
 
   authors: [{ name: school.name }],

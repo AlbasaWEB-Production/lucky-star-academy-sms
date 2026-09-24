@@ -4,7 +4,7 @@ import { Box, Button, Typography } from "@mui/material";
 import DetailText from "@/components/site/DetailText";
 import PageHero from "@/components/site/PageHero";
 import Section, { SectionHeading } from "@/components/site/Section";
-import { contact, isKnown, school, social } from "@/content/site";
+import { campuses, contact, isKnown, school, social } from "@/content/site";
 import { pageMetadata } from "@/lib/site/metadata";
 import { portalHref } from "@/lib/site/host";
 import { BRAND_GOLD, BRAND_GREEN_DARK, ON_GREEN } from "@/theme";
@@ -36,29 +36,45 @@ export default function ContactPage() {
 
   const rows: { label: string; value: React.ReactNode }[] = [
     {
-      label: "Address",
+      label: "Campuses",
       value: (
-        <>
-          <DetailText detail={contact.addressLine1} />
-          <br />
-          {contact.town}, {contact.region}
-          <br />
-          {contact.country}
-        </>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {campuses.map((campus) => (
+            <Box key={campus.name}>
+              <Box sx={{ fontWeight: 600, color: "text.primary" }}>{campus.name} Campus</Box>
+              <Box sx={{ color: "text.secondary" }}>{campus.address}</Box>
+            </Box>
+          ))}
+          <Box sx={{ color: "text.secondary" }}>
+            {contact.town}, {contact.region}, {contact.country}
+          </Box>
+        </Box>
       ),
     },
     {
       label: "Telephone",
-      value: hasPhone ? (
-        <Box
-          component="a"
-          href={`tel:${contact.phone.value.replace(/\s+/g, "")}`}
-          sx={{ color: "primary.main", fontWeight: 600 }}
-        >
-          {contact.phone.value}
+      value: (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+          {[contact.phone, contact.phoneAlt].map((phone, index) =>
+            isKnown(phone) ? (
+              <Box
+                key={phone.value}
+                component="a"
+                href={`tel:${phone.value.replace(/\s+/g, "")}`}
+                sx={{ color: "primary.main", fontWeight: 600 }}
+              >
+                {phone.value}
+                {index === 0 ? (
+                  <Box component="span" sx={{ color: "text.secondary", fontWeight: 400, ml: 1 }}>
+                    (office)
+                  </Box>
+                ) : null}
+              </Box>
+            ) : (
+              <DetailText key={`pending-${index}`} detail={phone} />
+            ),
+          )}
         </Box>
-      ) : (
-        <DetailText detail={contact.phone} />
       ),
     },
     {
@@ -154,8 +170,10 @@ export default function ContactPage() {
             Finding us
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-            The school is in {school.town}, in Ghana&rsquo;s {school.region}. Our exact digital
-            address (Ghana Post GPS) is being confirmed.{" "}
+            Both campuses are in {school.town}, in Ghana&rsquo;s {school.region} — the{" "}
+            {campuses[0].name} Campus {campuses[0].address.toLowerCase()}, and the{" "}
+            {campuses[1].name} Campus {campuses[1].address.toLowerCase()}. Ask the office which
+            campus your child&rsquo;s class sits at.{" "}
             <Box
               component="a"
               href="https://www.google.com/maps/search/?api=1&query=Lucky+Star+Academy+Yendi"
@@ -167,6 +185,10 @@ export default function ContactPage() {
             </Box>
             .
           </Typography>
+
+          <Box sx={{ mt: 1 }}>
+            <DetailText detail={contact.postalAddress} sx={{ color: "text.secondary" }} />
+          </Box>
         </Box>
       </Section>
 

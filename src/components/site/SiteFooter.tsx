@@ -6,7 +6,7 @@ import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
 import Link from "@/components/NextLink";
 import DetailText from "@/components/site/DetailText";
 import SchoolLogo from "@/components/ui/SchoolLogo";
-import { contact, isKnown, newsletter, school, TAGLINE } from "@/content/site";
+import { campuses, contact, isKnown, newsletter, school, TAGLINE } from "@/content/site";
 import { portalHref } from "@/lib/site/host";
 import { SITE_NAV } from "@/lib/site/routes";
 import { BRAND_GOLD, BRAND_GREEN_DARK, DISPLAY_FONT, ON_GREEN, TEXT_FONT } from "@/theme";
@@ -50,7 +50,6 @@ const bodySx = {
 
 export default function SiteFooter() {
   const year = new Date().getFullYear();
-  const hasPhone = isKnown(contact.phone);
   const hasEmail = isKnown(contact.email);
 
   return (
@@ -199,35 +198,43 @@ export default function SiteFooter() {
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
-                <LocationOnOutlinedIcon sx={{ fontSize: 17, color: BRAND_GOLD, mt: 0.25 }} />
-                <Typography sx={{ ...bodySx, fontSize: "0.8125rem" }} component="div">
-                  <DetailText detail={contact.addressLine1} component="span" />
-                  <br />
-                  {contact.town}, {contact.region}
-                  <br />
-                  {contact.country}
-                </Typography>
-              </Box>
-
-              {hasPhone ? (
+              {campuses.map((campus) => (
                 <Box
-                  component="a"
-                  href={`tel:${contact.phone.value.replace(/\s+/g, "")}`}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.25,
-                    color: ON_GREEN,
-                    fontSize: "0.8125rem",
-                    textDecoration: "none",
-                    "&:hover": { color: BRAND_GOLD },
-                  }}
+                  key={campus.name}
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}
                 >
-                  <PhoneOutlinedIcon sx={{ fontSize: 17, color: BRAND_GOLD }} />
-                  {contact.phone.value}
+                  <LocationOnOutlinedIcon sx={{ fontSize: 17, color: BRAND_GOLD, mt: 0.25 }} />
+                  <Typography sx={{ ...bodySx, fontSize: "0.8125rem" }} component="div">
+                    <Box component="span" sx={{ fontWeight: 600, color: "#FFFFFF" }}>
+                      {campus.name} Campus
+                    </Box>
+                    <br />
+                    {campus.address}
+                  </Typography>
                 </Box>
-              ) : null}
+              ))}
+
+              {[contact.phone, contact.phoneAlt].map((phone) =>
+                isKnown(phone) ? (
+                  <Box
+                    key={phone.value}
+                    component="a"
+                    href={`tel:${phone.value.replace(/\s+/g, "")}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.25,
+                      color: ON_GREEN,
+                      fontSize: "0.8125rem",
+                      textDecoration: "none",
+                      "&:hover": { color: BRAND_GOLD },
+                    }}
+                  >
+                    <PhoneOutlinedIcon sx={{ fontSize: 17, color: BRAND_GOLD }} />
+                    {phone.value}
+                  </Box>
+                ) : null,
+              )}
 
               {hasEmail ? (
                 <Box

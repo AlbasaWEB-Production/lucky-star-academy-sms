@@ -70,18 +70,16 @@ visible without reading any code.
 
 | What | Where it appears | Content key |
 | --- | --- | --- |
-| School office phone number | Contact page, footer | `contact.phone` |
-| School email address | Contact page, footer | `contact.email` |
-| Street address or Ghana Post GPS digital address | Contact page, footer | `contact.addressLine1` |
+| **The head teacher's name** — supplied blank | Staff page | `staff.members[0].name` |
 | Office opening hours | Contact page | `contact.officeHours` |
 | A paragraph about the school, in the school's own words | Home page, About page | `welcome.body` |
 | The school's history | About page | `about.story.body` |
-| Mission and vision statements | About page | `about.mission`, `about.vision` |
+| **Mission and vision statements** — supplied blank | About page | `about.mission`, `about.vision` |
 | Admission requirements — the actual document list | Admissions page | `admissions.requirements.items` |
 | How fees should be presented | Admissions page | `admissions.fees.body` |
 | Term dates for the coming year | Academics page | `academics.calendar.items` |
 | Photographs of the school | Gallery page | `gallery.needs` |
-| **Replacement photographs** for the nine stock stand-ins | Home and Gallery pages | see above |
+| **Replacement photographs** for the nine stock stand-ins | Home, Staff and Gallery pages | see above |
 
 ### The home page's bands — the reference layout's slots
 
@@ -89,7 +87,8 @@ The home page was rebuilt from a reference design, and four of its blocks are
 slots waiting for figures. Every value in them reads "To be confirmed" on
 purpose: the reference's own numbers (25+ years, 1,500+ pupils, 98% university
 acceptance) describe a different school, and a plausible figure on a real
-school's website cannot be told apart from a true one.
+school's website cannot be told apart from a true one. The school supplied its
+programmes and its registrations but no figures.
 
 | What | Where | Content key |
 | --- | --- | --- |
@@ -100,28 +99,39 @@ school's website cannot be told apart from a true one.
 | Pupils going on to junior high | Home — numbers strip | `statsBand[4]` |
 | Pupils per teacher | Home — fact cards | `factCards[0]` |
 | Clubs and activities | Home — fact cards | `factCards[1]` |
-| The school's values | Home — values band **and** About page | `about.values.items` |
 
 "The years of teaching" figure is derivable from the founding year (2014) if the
 school would rather not state a number. "Pupils going on to junior high" is this
 site's stand-in for the reference's "university acceptance", which is not
 something a primary school has.
 
+**The values band is now entirely real** — it carries no placeholder at all,
+because the school supplied its programmes and its five values.
+
+### The four programme descriptions
+
+The programmes themselves — their names, labels and every class and subject
+inside them — are all supplied. Only the paragraph describing how each is taught
+is open.
+
+| Programme | What is needed | Content key |
+| --- | --- | --- |
+| Preschool | What the preschool years focus on, and the age each class takes | `programmes[0].body` |
+| Primary | What the primary years cover, and how Basic 6 is prepared for junior high | `programmes[1].body` |
+| Islamic Studies | Whether every pupil takes it or it is an option, and at which levels | `programmes[2].body` |
+| Digital Studies | How it is taught, and what equipment the school has | `programmes[3].body` |
+
 ### Important but not blocking
 
 | What | Where it appears | Content key |
 | --- | --- | --- |
-| Second phone number | Contact page | `contact.phoneAlt` |
-| Postal address, if used | — (not yet rendered) | `contact.postalAddress` |
-| Values the school wants to be known for | Home page, About page | `about.values.items` |
-| Head teacher's name | About page | `about.leadership.headTeacher` |
-| Whether a staff page is wanted, and who may be listed | About page | `about.leadership.note` |
-| GES registration number | About page | `about.registration` |
-| Which classes sit at which campus | About page | `about.campusClasses` |
-| Subjects taught at each level | Academics page | `academics.subjects.items` |
+| Postal address, if used | Contact page | `contact.postalAddress` |
+| Whether teaching staff should also be listed | Staff page | `staff.more` |
+| The four registration numbers | About page | `about.registrationNumbers` |
+| Which classes and programmes are held at each campus | About page | `about.campusClasses` |
+| Subjects taught in the primary classes | Academics page | `academics.subjects.items` |
 | How pupils are assessed, and what a report card shows | Academics page | `academics.assessment.body` |
 | The school day — opening, closing, break, closed days | Academics page | `academics.schoolDay.items` |
-| What lower and upper primary each focus on | Academics page | `academics.stages[].body` |
 | How a family first makes contact | Admissions page | `admissions.steps[0].body` |
 | Where the admission form is obtained | Admissions page | `admissions.steps[1].body` |
 | How a place is confirmed | Admissions page | `admissions.steps[3].body` |
@@ -129,12 +139,20 @@ something a primary school has.
 | WhatsApp number | — (not yet rendered) | `social.whatsapp` |
 | Position on publishing photographs of pupils | Gallery page | `gallery.consent` |
 
-### Confirmed facts already used
+### Confirmed facts, now supplied
 
-These came from the school itself (its banner, and its own class data) and are
-not placeholders: the school name, **Yendi** and the **Northern Region**, the
-**Primary 1–6** range, the **Nayilifong** and **Kpatuya** campuses, the founding
-year **2014**, and the motto **“A Difference of Excellence”**.
+These came from the school and are **not** placeholders. All of them are live on
+the site:
+
+- Name, motto, founding year (2014), town and region
+- **Preschool** — creche, nursery, kindergarten — and **Primary**, Basic 1–6
+- **Islamic Studies** — Quran, Hadith, Fiqh, Luga, Tawheed, Seerah
+- **Digital Studies** — Computing, Coding, Robotics, AI
+- **Values** — Discipline, Faith, Excellence, Knowledge, Love
+- **Both campus addresses**, both telephone numbers, and the email address
+- **All four registrations** — GES, NaSIA, Department of Social Welfare,
+  Registrar-General's Department
+- **Abdulai Rahama**, Admin and Finance Officer
 
 ## Two things that need a decision, not just content
 

@@ -26,10 +26,27 @@
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9222);
 const BASE = process.env.BASE_URL ?? "http://127.0.0.1:3100";
 
-const PATHS = ["/", "/about", "/academics", "/admissions", "/news", "/gallery", "/contact", "/nope"];
+const PATHS = [
+  "/",
+  "/about",
+  "/academics",
+  "/admissions",
+  "/staff",
+  "/news",
+  "/gallery",
+  "/contact",
+  "/nope",
+];
 
-/** 360 is the documented floor; 390 and 768 are common real devices. */
-const WIDTHS = [360, 390, 768, 1440];
+/**
+ * 360 is the documented floor; 390 and 768 are common real devices.
+ *
+ * 900 and 1024 are here because of a gap this script had: MUI's `md` breakpoint
+ * is 900px, which is where the desktop navigation appears and where the header
+ * is at its tightest — eight links plus the call to action in the least space
+ * they ever get. Testing 768 and 1440 skipped exactly that case.
+ */
+const WIDTHS = [360, 390, 768, 900, 1024, 1440];
 
 /** One pixel of sub-pixel rounding is not an overflow. */
 const TOLERANCE = 1;

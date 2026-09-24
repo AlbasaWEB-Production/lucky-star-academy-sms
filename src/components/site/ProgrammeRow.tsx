@@ -1,53 +1,48 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  IconButton,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Dialog, DialogContent, IconButton, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloseIcon from "@mui/icons-material/Close";
 
 import Link from "@/components/NextLink";
 import PhotoFrame, { STOCK_PLACEHOLDER } from "@/components/site/PhotoFrame";
 import { PendingBlock } from "@/components/site/DetailText";
-import { programmeCards } from "@/content/site";
+import { programmes } from "@/content/site";
 import { BRAND_GOLD, BRAND_GREEN, BRAND_GREEN_DARK, INK } from "@/theme";
 
 /**
- * The five curriculum cards, each opening a detail panel.
+ * The school's four programmes, each opening a detail panel.
  *
- * This is the reference layout's programme row and its dialog, kept because the
- * row is the only place the reference's structure beats separate pages: five
- * short summaries a visitor can scan, with the detail one tap away for the two
- * people who want it.
+ * The reference layout's programme row and its dialog, kept because the row is
+ * the only place the reference's structure beats separate pages: short
+ * summaries a visitor can scan, with the detail one tap away for the two people
+ * who want it.
  *
- * The row and the Academics page describe the same five things — `programmeCards`
- * is derived from `academics` in the content module, so neither can drift from
- * the other, and a detail filled in once appears in both places.
+ * The row runs to **four** cards, not the reference's five, because the school
+ * teaches four programmes. The fifth slot is not filled with a near-duplicate
+ * to keep the grid symmetrical.
+ *
+ * Both the row and the Academics page read the same `programmes` array, so the
+ * two cannot drift apart, and a programme added once appears in both.
  *
  * Client component, because a dialog is state. The data is plain and comes from
  * the content module; nothing is fetched.
  *
  * The photographs are stock placeholders and say so on their face — see
- * `PhotoFrame`. Five different crops of one file, so the row does not read as
- * five copies of the same picture.
+ * `PhotoFrame`. Different crops of one file, so the row does not read as four
+ * copies of the same picture.
  */
 const CROPS = [
   STOCK_PLACEHOLDER.crops.left,
   STOCK_PLACEHOLDER.crops.centre,
   STOCK_PLACEHOLDER.crops.right,
-  STOCK_PLACEHOLDER.crops.lower,
   STOCK_PLACEHOLDER.crops.upper,
 ];
 
 export default function ProgrammeRow() {
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const open = programmeCards.find((card) => card.key === openKey) ?? null;
+  const open = programmes.find((programme) => programme.key === openKey) ?? null;
 
   return (
     <>
@@ -58,17 +53,16 @@ export default function ProgrammeRow() {
           gridTemplateColumns: {
             xs: "1fr",
             sm: "1fr 1fr",
-            md: "repeat(3, minmax(0, 1fr))",
-            lg: "repeat(5, minmax(0, 1fr))",
+            lg: "repeat(4, minmax(0, 1fr))",
           },
         }}
       >
-        {programmeCards.map((card, index) => (
+        {programmes.map((programme, index) => (
           <Box
-            key={card.key}
+            key={programme.key}
             component="button"
             type="button"
-            onClick={() => setOpenKey(card.key)}
+            onClick={() => setOpenKey(programme.key)}
             aria-haspopup="dialog"
             sx={{
               display: "flex",
@@ -100,7 +94,7 @@ export default function ProgrammeRow() {
               alt=""
               objectPosition={CROPS[index % CROPS.length]}
               aspectRatio="16 / 10"
-              sizes="(max-width: 599px) 100vw, (max-width: 1199px) 50vw, 260px"
+              sizes="(max-width: 599px) 100vw, (max-width: 1199px) 50vw, 320px"
               radius="0"
             />
 
@@ -109,19 +103,25 @@ export default function ProgrammeRow() {
                 component="h3"
                 sx={{
                   fontFamily: "var(--font-fraunces)",
-                  fontSize: "1.0625rem",
+                  fontSize: "1.125rem",
                   fontWeight: 600,
                   lineHeight: 1.3,
                   color: BRAND_GREEN_DARK,
                 }}
               >
-                {card.title}
+                {programme.name}
               </Typography>
 
               <Typography
-                sx={{ fontSize: "0.875rem", lineHeight: 1.6, color: "text.secondary", mt: 1, flex: 1 }}
+                sx={{
+                  fontSize: "0.875rem",
+                  lineHeight: 1.6,
+                  color: "text.secondary",
+                  mt: 1,
+                  flex: 1,
+                }}
               >
-                {card.summary}
+                {programme.summary}
               </Typography>
 
               <Box
@@ -139,7 +139,7 @@ export default function ProgrammeRow() {
                   fontWeight: 700,
                 }}
               >
-                <Box component="span">{card.meta}</Box>
+                <Box component="span">{programme.meta}</Box>
                 <ArrowForwardIcon
                   className="programme-arrow"
                   sx={{ fontSize: 18, transition: "transform 200ms ease" }}
@@ -185,11 +185,45 @@ export default function ProgrammeRow() {
                 pr: 4,
               }}
             >
-              {open.title}
+              {open.name}
             </Typography>
 
+            {/* The classes or subjects inside the programme. Every entry here
+                was supplied by the school, so it renders as real content even
+                while the paragraph beneath it is still open. */}
+            <Box
+              component="ul"
+              sx={{
+                listStyle: "none",
+                m: 0,
+                p: 0,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 3,
+              }}
+            >
+              {open.courses.map((course) => (
+                <Box
+                  component="li"
+                  key={course}
+                  sx={{
+                    px: 1.5,
+                    py: 0.6,
+                    borderRadius: "999px",
+                    backgroundColor: "rgba(20, 123, 69, 0.09)",
+                    color: BRAND_GREEN_DARK,
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {course}
+                </Box>
+              ))}
+            </Box>
+
             <PendingBlock
-              detail={open.detail}
+              detail={open.body}
               fallback={open.fallback}
               sx={{ color: "text.secondary", lineHeight: 1.75 }}
             />
@@ -199,7 +233,10 @@ export default function ProgrammeRow() {
                 component={Link}
                 href="/academics"
                 variant="contained"
-                sx={{ backgroundColor: BRAND_GREEN, "&:hover": { backgroundColor: BRAND_GREEN_DARK } }}
+                sx={{
+                  backgroundColor: BRAND_GREEN,
+                  "&:hover": { backgroundColor: BRAND_GREEN_DARK },
+                }}
               >
                 All academics
               </Button>
